@@ -116,7 +116,9 @@ ainda gera 1 falso-positivo que o Detect4Shell não gera.) São **casamentos de 
 uso real — não crashes executados em cada JDK.
 
 > **Honestidade (pedida pelos revisores cross-vendor):** o "16/16" é **9 TP / 7 TN num conjunto curado de
-> 16 vetores** — é um **teste unitário**, não uma taxa de FP de produção. A **baseline** é a NOSSA
+> 16 vetores** — um **teste unitário**. Medimos também **0 FP em 107.752 strings benignas reais**
+(base64/JWT/data-URI/presigned/paths/SecLists) num corpus de **estresse** — ver [`testes/fp-replay/`](testes/fp-replay/)
+(limite ~95% ≈ 0,003% pela "regra de 3"; não é amostra de produção). A **baseline** é a NOSSA
 > reconstrução de uma regra exata-A/Basic (um PoC estreito), **não** o upstream como enviado — por isso
 > rotulamos "exata-A/Basic-only". A forma pode aparecer em tráfego legítimo malformado (data-URI, URLs
 > pré-assinadas S3, slugs/tokens longos com `-_` terminando em `=`), então um hit de rede único é confiança
