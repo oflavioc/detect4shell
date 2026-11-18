@@ -11,7 +11,8 @@ OpenJDK por baixo, nem se a CPU do host tem AVX-512 VBMI — os dois fatos que r
 determinam a vulnerabilidade. Então esta ferramenta só consegue dizer "produto afetado
 alcançável, confirme host-local". A confirmação é host-local (laboratorio/verificar_patch.sh
 num host que você possui). Use apenas contra hosts que você está autorizado a testar. Faz 1 GET benigno por
-endpoint de versão (até ~2 por produto; para na primeira resposta), nunca o payload.
+endpoint de versão (até ~2 por produto; para na primeira resposta; redirects 30x são seguidos,
+podendo somar hops GET benignos), nunca o payload.
 
 Uso:  python -I verificar_exposicao.py [--insecure] https://host[:porta] [https://host2 ...]
       (TLS é verificado por padrão; --insecure só para estados de teste auto-assinados que você controla)

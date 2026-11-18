@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Detect4Shell FP-replay: mede a taxa de FALSOS-POSITIVOS da forma canonica contra um corpus
-# GRANDE de Base64 benigno REAL (nao os 18 vetores curados). Tudo offline, deterministico (seed).
+# GRANDE de Base64 benigno REAL (nao os 16 vetores curados). Tudo offline, deterministico (seed).
 # Roda no motor fiel: pcre2 (PCRE) + google-re2 (RE2). Ver run.sh / README.md.
 #
 # A forma canonica aqui espelha regras/README.md (o harness per-engine garante que as regras shipadas

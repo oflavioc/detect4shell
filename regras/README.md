@@ -14,16 +14,16 @@ OOB é **heap-dependente** (precisa de bytes Base64 válidos logo após o buffer
 no padrão fixo, **raro** em alocação arbitrária; por isso o crash é probabilístico (ver
 [ANALISE](../docs/ANALISE.md)). A regra usa alfabeto **SPLIT** (padrão `+/` OU url-safe `_-`, nunca
 misto — reduz FP em paths REST), aceita **1-2 `=`** (aceitar só um era bypassável por `==`), e `{16,}`
-amplo (pega 64 e 128). O `{16,}+` é **possessivo** (anti-ReDoS). Variante low-FP: `{64,}` no lugar de
+amplo (pega 64 e 128). O `{16,}+` é **possessivo** (anti-ReDoS); FortiWeb/FortiGate/Splunk `rex` enviam a variante **não-possessiva** `{16,}` (FortiOS pode rejeitar possessivo), detecção idêntica. Variante low-FP: `{64,}` no lugar de
 `{16,}` casa só múltiplos de 64 (os strides reais do vetor AVX-512).
 
 | Motor de regex | Padrão |
 |---|---|
-| **PCRE** (Suricata, ModSecurity, nginx, FortiWeb, FortiGate, Splunk `rex`) | `(?<![A-Za-z0-9+/_-])(?:(?:[A-Za-z0-9+/]{4}){16,}+\|(?:[A-Za-z0-9_-]{4}){16,}+)={1,2}(?![A-Za-z0-9+/_=-])` |
+| **PCRE** (Suricata, ModSecurity, nginx; FortiWeb/FortiGate/Splunk `rex` usam `{16,}` não-possessivo) | `(?<![A-Za-z0-9+/_-])(?:(?:[A-Za-z0-9+/]{4}){16,}+\|(?:[A-Za-z0-9_-]{4}){16,}+)={1,2}(?![A-Za-z0-9+/_=-])` |
 | **RE2 / sem-lookbehind** (AWS WAF, Cloudflare, Elastic `regexp`, FortiAnalyzer) | `(^\|[^A-Za-z0-9+/_-])(?:(?:[A-Za-z0-9+/]{4}){16,}\|(?:[A-Za-z0-9_-]{4}){16,})={1,2}([^A-Za-z0-9+/_=-]\|$)` |
 | **+ `=` percent-encoded (`%3D`)** p/ URI/corpo brutos | `…={1,2}(?![A-Za-z0-9+/_=-])` ou o ramo `(?:={1,2}…\|%3[dD])` |
 
-> **Evasão (regras de rede são pré-normalização):** `%3D`, `=` (JSON) e `&#61;` (XML/SAML) passam no
+> **Evasão (regras de rede são pré-normalização):** `%3D`, `\u003d` (JSON) e `&#61;` (XML/SAML) passam no
 > sensor e chegam decodificados ao `Base64.decode`. Normalize antes do match quando possível (ex.: ModSec
 > `t:urlDecodeUni,t:jsDecode`). O MIME decoder **não** é vulnerável, então line-wrap MIME **não** é evasão.
 

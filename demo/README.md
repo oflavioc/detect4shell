@@ -4,8 +4,10 @@ Mostra, passo a passo, o **ataque acontecendo** (a escrita fora-dos-limites de 6
 Java4Shell) e depois a **defesa na borda** barrando o mesmo request **antes** de chegar no Java —
 usando a regra nginx **do próprio repo** ([`../regras/nginx/detect4shell.conf`](../regras/nginx/detect4shell.conf)).
 
-> ⚠️ **SÓ LABORATÓRIO.** O alvo é um servidor Java **deliberadamente vulnerável**; não o exponha na
-> Internet. Não é um exploit: o "payload" é a string Base64 malformada já pública (`A×64 + "="`), e toda
+> ⚠️ **SÓ LABORATÓRIO.** O alvo é um servidor Java **deliberadamente vulnerável**. O passo 1 sobe em
+> `0.0.0.0` (preciso para o container nginx alcançá-lo via `host.docker.internal`), o que o deixa
+> **alcançável pela LAN** — rode só em **rede isolada/confiável** e **nunca** o exponha na Internet.
+> Não é um exploit: o "payload" é a string Base64 malformada já pública (`A×64 + "="`), e toda
 > consequência fica dentro do processo (ele **mede** a violação de memória; não é weaponizado).
 
 ![Detect4Shell — ataque vs. defesa: sem a borda o gatilho dispara a escrita OOB de 62 bytes; com a borda é bloqueado antes do backend Java](demo-before-after.png)
@@ -33,7 +35,7 @@ LOG DO ALVO: só 1 escrita OOB (a da Fase 1). O gatilho da Fase 2 NÃO gerou OOB
              => a borda barrou antes do backend Java.
 ```
 
-## Dois fatos honestos sobre o demo
+## Três fatos honestos sobre o demo
 - **A escrita OOB de 62 bytes é HEAP-DEPENDENTE, não determinística:** mesmo input, o reprodutor
   oficial estoura 100% (padrão de alocação fixo) mas um loop com arrays frescos ~0% — ela só dispara
   quando há bytes Base64 válidos logo **após** o buffer de decode. O **crash (DoS)** é, portanto,

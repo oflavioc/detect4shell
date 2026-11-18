@@ -1,6 +1,6 @@
 # FP-replay — taxa de falsos-positivos de PRODUÇÃO
 
-O `validar.py` prova **0 FP em 18 vetores curados** — um teste unitário, não uma taxa de produção. Isto
+O `validar.py` prova **0 FP em 16 vetores curados** — um teste unitário, não uma taxa de produção. Isto
 mede a FP contra um corpus **grande de Base64 benigno REAL**.
 
 ## Resultado (2026-11-18, seed 1337)
@@ -44,3 +44,6 @@ Exit 0 = zero FP. Qualquer FP imprime exemplos e sai 1 (é um achado).
 - Mede a FP da **forma canônica** (PCRE/RE2). As variantes shipadas por engine são garantidas iguais pelo
   harness [`../per-engine/`](../per-engine/) (que também roda no motor real).
 - Não mede falsos-**negativos** — isso é o `validar.py` + o lab de reprodução.
+- **Reprodutibilidade:** as **103.000** strings curadas são 100% determinísticas (seed 1337); a cauda do
+  **SecLists** (4.752) é baixada do upstream (`common.txt` é gitignored), então o total exato **107.752**
+  vale contra um snapshot fixo do `common.txt` e o 1º run não é offline. O 0-FP é robusto a ±alguns itens.

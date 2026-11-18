@@ -15,9 +15,10 @@ internet/LAN --> [ sensor: nginx, só detecta ] --rede interna--> [ mock: nginx,
 - O alvo vulnerável `demo/alvo/VulnBasicAuthServer.java` **nunca** faz parte deste stack.
 - **Modo-monitor**: num hit, o sensor registra uma linha JSON estruturada (qual campo
   casou: `authorization` / `args` / `cookie`) e **ainda assim encaminha** a requisição.
-  Nunca devolve 403. Valores crus de header/arg **não** são logados (só os flags de match
-  e um bucket de comprimento), então credenciais reais enviadas por scanners/clientes
-  não são armazenadas.
+  Nunca devolve 403. Os valores crus dos campos que carregam credencial (`Authorization`/`args`/`cookie`)
+  **não** são logados — só os flags de match + um **bucket de comprimento** do `Authorization`. Metadados
+  de request (ts, IP de origem, método, caminho `$uri` sem query-string e o `User-Agent`) **são**
+  registrados; nenhum campo com o payload do gatilho é armazenado cru.
 - As regras são os `map`s de `regras/nginx/detect4shell.conf` (split canônico + `={1,2}`).
   `regras/` fica intocado; os `map`s são copiados para `sensor/nginx.conf`.
 - A medição de falso-positivo já é feita offline em escala pelo `testes/fp-replay/`

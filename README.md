@@ -45,8 +45,8 @@ confirmações independentes. Consenso:
 - ✅ **Reproduzido por nós (lab confinado):** escrita **OOB de 62 bytes** (`changed=62 first=50 last=111`),
   consistente com o sintoma do descobridor. ⚠️ O **disparo** é **heap-dependente** (100% no padrão fixo do
   reprodutor, ~0% com arrays frescos — precisa de bytes Base64 válidos logo após o buffer de decode), por
-  isso o crash é **probabilístico** e uma exploração confiável exige *heap grooming*. **Reportado pelas
-  fontes** (não demonstrado por nós): **crash (DoS)** + **leak local de heap ("JavaBleed")**.
+  isso o crash é **probabilístico** e uma exploração confiável exige *heap grooming*. **Demonstrado por
+  terceiros** (não por nós): **crash (DoS)** + **leak local de heap ("JavaBleed")**.
 - ⚠️ **RCE genérico: alegado, não reproduzido publicamente contra produtos stock.** O descobridor publica
   que o padrão do overflow é **fixo** e que o caminho ingênuo **falha** (consistente com o disparo
   heap-dependente acima — por isso precisa de *grooming*); os labs independentes só chegaram a **crash +
@@ -57,8 +57,8 @@ confirmações independentes. Consenso:
   (`A×64+"="`). Amazon/OpenJDK pontuam como difícil (CVSS 8.1, AC:H).
 - 🚫 **Sem exploração in-the-wild; não está na CISA KEV** (em 2026-11-18).
 
-**Resumo honesto:** hoje o risco real é **tirar o sistema do ar** (e talvez **vazar dado**). "Hacker
-assume tudo" é possibilidade teórica, não realidade demonstrada. ⚠️ **Antes de entrar em pânico:** o bug
+**Resumo honesto:** hoje o risco real é **tirar o sistema do ar** (e **vazar dado** — leak local já
+demonstrado em teste por terceiros). "Hacker assume tudo" (RCE genérico) é possibilidade teórica, não realidade demonstrada. ⚠️ **Antes de entrar em pânico:** o bug
 exige **x86-64 com AVX-512 VBMI** (Ice Lake+ / Zen 4+) — **ARM/Graviton e Xeon Skylake/Cascade Lake são
 imunes**, então boa parte das frotas nem está no caminho. E lembre: **banner ≠ match de regra ≠ bug** são
 três coisas diferentes (um WAF bloquear não prova que o host era explorável; não bloquear não prova que era
@@ -162,7 +162,7 @@ forma ao JVM (divulgado abertamente — pedido pelos revisores):
 - **`=` percent-encoded (`%3D`):** engines que decodificam URL (Suricata `http.uri`, ModSec `ARGS`,
   AWS/Cloudflare com `URL_DECODE`) pegam; buffers brutos usam a variante `(?:=…|%3[dD])` — que é **mais
   ampla, não equivalente** (não exige pad único). Dupla codificação (`%253D`) é caso de borda.
-- **Escape JSON/XML:** `=` (JSON) e `&#61;`/`&#x3d;` (XML/SAML) passam no WAF e chegam **decodificados**
+- **Escape JSON/XML:** `\u003d` (JSON) e `&#61;`/`&#x3d;` (XML/SAML) passam no WAF e chegam **decodificados**
   ao parser → `Base64.decode`. **Mitigação:** aplique normalização antes do match
   (ModSec: `t:urlDecodeUni,t:jsDecode,t:htmlEntityDecode`).
 - **Precisão (contra um erro comum):** o decoder **MIME** (`getMimeDecoder`) **NÃO é vulnerável** — toma o
@@ -173,7 +173,7 @@ forma ao JVM (divulgado abertamente — pedido pelos revisores):
 ## Confiança e falsos-positivos
 
 - Hit de rede único = confiança **baixa/média**. Escale por correlação: **rajada de aquecimento**
-  (milhares de requisições Base64 de uma origem/minuto) ou **indicador de crash** (`hs_err_pid` / `SIGSEGV`
+  (dezenas–centenas de milhares de requisições Base64 de uma origem — ~200k p/ o JIT compilar o intrínseco) ou **indicador de crash** (`hs_err_pid` / `SIGSEGV`
   / `StubRoutines` / `_base64_decodeBlock`).
 - Maior confiança de rede: **SAML** com a cauda malformada (IdP decodifica pré-auth; SAML legítimo é bem-formado).
 - Sinal mais confiável no geral é **host**: `IllegalArgumentException` repetida do `Base64$Decoder` + logs
@@ -191,7 +191,7 @@ forma ao JVM (divulgado abertamente — pedido pelos revisores):
 4. **Defense-in-depth na borda/aplicação** (enquanto não corrige): regra de WAF/proxy em
    [`regras/`](regras/) e o **Servlet Filter** em [`mitigacao/`](mitigacao/) — este último roda dentro
    da JVM: **fecha a evasão `%3D`** (o container URL-decodifica query/form), mas **não** decodifica
-   `&#61;`/`=` de corpos XML/JSON — esses chegam ao parser downstream (use a flag de JVM p/ eles).
+   `&#61;`/`\u003d` de corpos XML/JSON — esses chegam ao parser downstream (use a flag de JVM p/ eles).
 
 ## Mapa do repositório
 

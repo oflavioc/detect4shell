@@ -10,10 +10,11 @@ set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
 TIERS=(
-  "1/4 validar.py (FN+FP unit, no Docker)|python3 -I testes/validar.py"
-  "2/4 per-engine regex matrix (Docker)|bash testes/per-engine/run.sh"
-  "3/4 in-engine rule LOAD: YARA/nginx/Suricata (Docker)|bash testes/per-engine/load_check.sh"
-  "4/4 fp-replay 0-FP (Docker)|MSYS_NO_PATHCONV=1 bash testes/fp-replay/run.sh"  # NO_PATHCONV: Git-Bash/Windows mount fix for run.sh; no-op on Linux
+  "1/5 validar.py (FN+FP unit, no Docker)|python3 -I testes/validar.py"
+  "2/5 canonical drift-guard: 3 out-of-band regex copies (no Docker)|python3 -I testes/canonical_sync.py"
+  "3/5 per-engine regex matrix (Docker)|bash testes/per-engine/run.sh"
+  "4/5 in-engine rule LOAD: YARA/nginx/Suricata (Docker)|bash testes/per-engine/load_check.sh"
+  "5/5 fp-replay 0-FP (Docker)|MSYS_NO_PATHCONV=1 bash testes/fp-replay/run.sh"  # NO_PATHCONV: Git-Bash/Windows mount fix for run.sh; no-op on Linux
 )
 
 SUMMARY=()

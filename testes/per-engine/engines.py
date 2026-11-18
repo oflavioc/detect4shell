@@ -74,6 +74,9 @@ for i, m in enumerate(re.finditer(r'^\s*"~(.+)"\s+1;', read(f), re.M), 1):
     _add(f"nginx:map{i}", f, m.group(1), "pcre")
 
 # ---------------- ModSecurity ----------------
+# NOTE: `i` advances for EVERY @rx match, but _is_b64_rule drops non-shape rules (e.g. the SAML
+# ARGS_NAMES name-rule), so the shipped rx IDs are intentionally NON-CONTIGUOUS (rx4 is skipped).
+# The ID is only a label — the 43-regex count and the drift guard are unaffected by the gaps.
 f = "modsecurity/detect4shell.conf"
 for i, m in enumerate(re.finditer(r'@rx (\S+)"', read(f)), 1):
     if _is_b64_rule(m.group(1)):

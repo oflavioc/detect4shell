@@ -38,7 +38,10 @@ run_one() {
   shift
   local extra_args=("$@")
   local out
-  out="$(docker run --rm -v "${LAB_DIR}:/t:ro" "$image" sh -c \
+  # Pull (online) only if the image is missing, THEN run the reproducer with --network none so the
+  # measurement itself is offline — matching matrix.md's "sem acesso à rede" claim for the data run.
+  docker image inspect "$image" >/dev/null 2>&1 || docker pull "$image" >/dev/null 2>&1 || true
+  out="$(docker run --rm --network none -v "${LAB_DIR}:/t:ro" "$image" sh -c \
     "cd /tmp && cp /t/Base64Trigger.java . && javac Base64Trigger.java && java ${extra_args[*]:-} Base64Trigger" 2>&1)"
   local runtime length rejected changed result
   runtime="$(printf '%s\n' "$out" | sed -n 's/^runtime=//p' | head -1)"

@@ -59,5 +59,7 @@ CPU não-VBMI real ou um JDK corrigido fazem.
   posteriores, enquanto as point releases pré-correção do Temurin nos mesmos majors ainda reproduzem.
 
 Resumo: isto substitui a divulgação anterior de máquina-única ("validado em 1 máquina: Zen 4 / JDK
-21.0.13.0.2") por uma matriz **2-CPU × 5-builds-JDK × 2-flags-de-mitigação × 1-build-de-fornecedor-corrigido**,
-toda coletada sem nenhum acesso à rede e sem modificar o reprodutor confinado.
+21.0.13.0.2") por uma matriz de **5 builds JDK (2 já-corrigidos `.1`) × 2 flags de mitigação**, mais o
+eixo de **CPU** (2 microarquiteturas — resultados prior-art, não re-executados neste run). A varredura
+JDK roda com `--network none` (o `run_matrix.sh` só baixa a imagem, se faltar, antes do run isolado) e o
+reprodutor confinado não é modificado.

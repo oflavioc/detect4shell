@@ -42,11 +42,13 @@ O "derramar na mesa do lado" pode causar, do mais comum para o mais raro:
 
 - 🔴 **Derrubar o serviço (o mais provável).** O motor se atrapalha e **desliga** — o site/sistema
   **cai** (fica fora do ar). Isso é o que já foi provado na prática várias vezes.
-- 🟠 **Vazar segredos (possível).** Com cuidado, o atacante pode fazer o vizinho "derramado" ser um
-  pedaço de memória com **senhas, tokens ou dados** e **ler** isso. (Parecido com o antigo "Heartbleed".)
-- 🟡 **Assumir o controle — RCE (teórico, ainda não provado publicamente).** Em teoria, encadeando
-  vários passos difíceis, daria para **executar comandos**. Até agora **ninguém mostrou isso
-  funcionando de forma aberta**; os times que testaram só conseguiram **derrubar** e **vazar**.
+- 🟠 **Vazar segredos (demonstrado em teste, localmente).** Com cuidado, o atacante pode fazer o vizinho
+  "derramado" ser um pedaço de memória com **senhas, tokens ou dados** e **ler** isso — pesquisadores já
+  mostraram isso localmente ("JavaBleed"). (Parecido com o antigo "Heartbleed".)
+- 🟡 **Assumir o controle — RCE (não provado contra produtos reais).** Em teoria, encadeando vários passos
+  difíceis, daria para **executar comandos**. Até agora **ninguém mostrou RCE genérico contra um produto
+  real**; houve só uma demonstração **data-only num alvo-demo controlado** (contêiner como root + função
+  de admin), e quem testou produtos reais só conseguiu **derrubar** e **vazar**.
 
 > **Tradução honesta:** hoje, o risco real e comprovado é **tirar o sistema do ar** (e talvez **vazar
 > dado**). O "hacker assume tudo" é possibilidade, não realidade demonstrada. Não entre em pânico —

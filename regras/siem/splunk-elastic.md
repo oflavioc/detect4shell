@@ -66,6 +66,10 @@ FROM logs-java-*
 ```
 > `regexp` do Elasticsearch (Lucene) não suporta lookbehind — usamos a classe de fronteira à direita;
 > é levemente mais amplo (aceitável para detecção). Habilite o campo como `keyword`/`wildcard`.
+> ⚠️ **Semântica Lucene (importante):** o `regexp` do Lucene ancora no **termo inteiro** e trata `^`/`$`
+> como **literais** (não âncoras como no RE2, o motor onde validamos as 43 regexes), então um token no
+> **fim** do valor pode **não** casar as fronteiras acima. Para Lucene, envolva a forma com `.*` dos dois
+> lados — `".*(?:(?:[A-Za-z0-9+/]{4}){16,}|(?:[A-Za-z0-9_-]{4}){16,})={1,2}.*"` — e **valide no seu cluster**.
 
 ## O que fazer com os hits
 - Sinal de rede **sozinho** = confiança baixa/média → correlacione com (2) crash ou (1) rajada de exceções.

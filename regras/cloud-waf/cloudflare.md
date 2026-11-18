@@ -17,8 +17,9 @@ or (any(http.request.cookies[*] matches "(^|[^A-Za-z0-9+/_-])(?:(?:[A-Za-z0-9+/]
 - Depois troque para **`Block`** (ou `Managed Challenge` se preferir não bloquear duro).
 
 ## Notas
-- A forma `{64,}` é levemente mais ampla que as regras Suricata/ModSec (que exigem alinhamento a
-  quads); para **bloqueio na borda** isso é seguro — nenhum cliente correto envia Base64 malformado.
+- A expressão é **idêntica à forma canônica RE2** (`regras/README.md`): alfabeto split, **quad-alinhada**
+  `{16,}` (≥64 chars), `={1,2}` — a **mesma** forma de Suricata/ModSec, **não** mais ampla. Para
+  **bloqueio na borda** isso é seguro — nenhum cliente correto envia Base64 malformado.
 - Para inspecionar o **corpo** (ex.: `SAMLResponse` em POST), habilite a inspeção de payload e
   adicione uma condição com `http.request.body.raw matches "..."`.
 - Isto detecta a **forma do ataque na rede**. Não substitui **corrigir o Java** — é controle

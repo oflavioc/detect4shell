@@ -1,7 +1,7 @@
 # Java4Shell (CVE-2026-114938) — análise técnica resumida
 
 Resumo em português da mecânica, para fundamentar a detecção. Elaborado a partir de fontes
-públicas (OpenJDK advisory, Oracle CPU, Calif.io, The Hacker News, Endor Labs) e do commit de
+públicas cruzadas no README (p.ex. OpenJDK/Oracle, Calif.io, The Hacker News) e do commit de
 correção `5177a70b385c` (JDK-8393212). Para a análise completa original, veja a divulgação da
 Calif.io e o repositório `ikow/java4shell-poc`.
 
