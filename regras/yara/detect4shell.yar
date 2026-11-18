@@ -34,7 +34,7 @@ rule Java4Shell_Malformed_Base64_Payload
         severity = "medium"
     strings:
         // >=64 chars Base64 (ambos alfabetos) seguidos de UM '=' e uma fronteira não-Base64
-        $shape = /[A-Za-z0-9+\/_-]{64,}=([^A-Za-z0-9+\/_=-]|\x0d|\x0a)/
+        $shape = /(?:[A-Za-z0-9+\/]{64,}|[A-Za-z0-9_-]{64,})={1,2}([^A-Za-z0-9+\/_=-]|\x0d|\x0a)/
         $ctx_basic  = "Authorization: Basic " nocase
         $ctx_bearer = "Authorization: Bearer " nocase
         $ctx_saml1  = "SAMLRequest=" nocase

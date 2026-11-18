@@ -11,17 +11,17 @@ Se a sua versão rejeitar o lookbehind, use a **forma de fallback RE2** indicada
 
 **Precisa (PCRE com lookbehind)** — header / cookie (campos não URL-encoded):
 ```
-(?<![A-Za-z0-9+/_-])(?:[A-Za-z0-9+/_-]{4}){16,}=(?![A-Za-z0-9+/_=-])
+(?<![A-Za-z0-9+/_-])(?:(?:[A-Za-z0-9+/]{4}){16,}|(?:[A-Za-z0-9_-]{4}){16,})={1,2}(?![A-Za-z0-9+/_=-])
 ```
 
 **URI / corpo (trata também o `=` percent-encoded `%3D`)**:
 ```
-(?<![A-Za-z0-9+/_-])(?:[A-Za-z0-9+/_-]{4}){16,}(?:=(?![A-Za-z0-9+/_=-])|%3[dD])
+(?<![A-Za-z0-9+/_-])(?:(?:[A-Za-z0-9+/]{4}){16,}|(?:[A-Za-z0-9_-]{4}){16,})(?:={1,2}(?![A-Za-z0-9+/_=-])|%3[dD])
 ```
 
 **Fallback RE2 (se o lookbehind não for aceito)** — ancora com classe de fronteira:
 ```
-(^|[^A-Za-z0-9+/_-])(?:[A-Za-z0-9+/_-]{4}){16,}=([^A-Za-z0-9+/_=-]|$)
+(^|[^A-Za-z0-9+/_-])(?:(?:[A-Za-z0-9+/]{4}){16,}|(?:[A-Za-z0-9_-]{4}){16,})={1,2}([^A-Za-z0-9+/_=-]|$)
 ```
 
 ## Via CLI (custom-protection-rule)
@@ -38,22 +38,22 @@ config waf custom-protection-rule
                 set header-name-type specify
                 set header-name "Authorization"
                 set type regular-expression
-                set expression "(?<![A-Za-z0-9+/_-])(?:[A-Za-z0-9+/_-]{4}){16,}=(?![A-Za-z0-9+/_=-])"
+                set expression "(?<![A-Za-z0-9+/_-])(?:(?:[A-Za-z0-9+/]{4}){16,}|(?:[A-Za-z0-9_-]{4}){16,})={1,2}(?![A-Za-z0-9+/_=-])"
             next
             edit 2
                 set target REQUEST_URI
                 set type regular-expression
-                set expression "(?<![A-Za-z0-9+/_-])(?:[A-Za-z0-9+/_-]{4}){16,}(?:=(?![A-Za-z0-9+/_=-])|%3[dD])"
+                set expression "(?<![A-Za-z0-9+/_-])(?:(?:[A-Za-z0-9+/]{4}){16,}|(?:[A-Za-z0-9_-]{4}){16,})(?:={1,2}(?![A-Za-z0-9+/_=-])|%3[dD])"
             next
             edit 3
                 set target REQUEST_COOKIE
                 set type regular-expression
-                set expression "(?<![A-Za-z0-9+/_-])(?:[A-Za-z0-9+/_-]{4}){16,}=(?![A-Za-z0-9+/_=-])"
+                set expression "(?<![A-Za-z0-9+/_-])(?:(?:[A-Za-z0-9+/]{4}){16,}|(?:[A-Za-z0-9_-]{4}){16,})={1,2}(?![A-Za-z0-9+/_=-])"
             next
             edit 4
                 set target REQUEST_BODY
                 set type regular-expression
-                set expression "(?<![A-Za-z0-9+/_-])(?:[A-Za-z0-9+/_-]{4}){16,}(?:=(?![A-Za-z0-9+/_=-])|%3[dD])"
+                set expression "(?<![A-Za-z0-9+/_-])(?:(?:[A-Za-z0-9+/]{4}){16,}|(?:[A-Za-z0-9_-]{4}){16,})(?:={1,2}(?![A-Za-z0-9+/_=-])|%3[dD])"
             next
         end
     next

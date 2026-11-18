@@ -10,12 +10,12 @@ import os, re, sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'deteccao'))
 import detect4shell as d
 
-# A PCRE EXATA embarcada nas regras Suricata / Sigma / ModSecurity:
-# >=16 "quads" Base64 (64 chars, ambos alfabetos) + EXATAMENTE um '=' numa fronteira
-# não-Base64. Validado em lab: o overflow só dispara com corpo alinhado a quads (múltiplo
-# de 4, >=64) + UM '='; `A*65+"="` (não-alinhado) e `A*64+"=="` (dois pads) NÃO disparam,
-# então são corretamente excluídos. Base64 válido (% 4 == 0) também é excluído.
-ENGINE_PCRE = re.compile(r'(?<![A-Za-z0-9+/_-])(?:[A-Za-z0-9+/_-]{4}){16,}+=(?![A-Za-z0-9+/_=-])')
+# A PCRE EXATA embarcada nas regras (alfabeto SPLIT std|url-safe, 1-2 '='):
+# >=16 "quads" Base64 (64 chars, alfabeto PURO padrão +/ OU PURO url-safe _-) + 1 OU 2 '=' numa
+# fronteira não-Base64. Validado em lab (padrão fixo do reprodutor): o overflow dispara com corpo
+# alinhado a quads (múltiplo de 4, >=64) + '=' OU '=='; `A*65+"="` (não-alinhado) e sem-'=' NÃO
+# disparam. Base64 válido (% 4 == 0) é excluído. O DISPARO em si é heap-dependente (ver ANALISE.md).
+ENGINE_PCRE = re.compile(r'(?<![A-Za-z0-9+/_-])(?:(?:[A-Za-z0-9+/]{4}){16,}+|(?:[A-Za-z0-9_-]{4}){16,}+)={1,2}(?![A-Za-z0-9+/_=-])')
 
 B64_STD_64 = ("Zm9vYmFy" * 8)[:64]          # 64 chars do alfabeto padrão, não-'A'
 B64_URLSAFE_64 = ("Zm9v-mF_" * 8)[:64]      # 64 chars incl. url-safe '-' e '_'
@@ -44,8 +44,8 @@ VETORES = [
     # ---- NÃO-GATILHOS (NÃO podem ser detectados — controles de falso-positivo) ----
     ("N6-prepad65",   "lab: prepad NÃO-alinhado a 4 (65 chars)+'=' NÃO dispara o overflow",
      f"GET /r?data={B64_STD_64}Q=&n=/ HTTP/1.1\r\nHost: x\r\n\r\n", False),
-    ("N7-dois-pads",  "lab: A×64 + '==' (dois pads) NÃO dispara o overflow",
-     f"POST /login HTTP/1.1\r\nHost: x\r\nAuthorization: Basic {'A'*64}==\r\n\r\n", False),
+    ("T9-dois-pads",  "lab: A×64 + '==' (dois pads) DISPARA o overflow (igual a '=') — fix do bypass ==",
+     f"POST /login HTTP/1.1\r\nHost: x\r\nAuthorization: Basic {'A'*64}==\r\n\r\n", True),
     ("N8-data-uri",   "FP-control: data-URI base64 válido em corpo (len%4==0, '==')",
      f"POST /u HTTP/1.1\r\nHost: x\r\n\r\nimg=data:image/png;base64,{B64_STD_64}QQ==", False),
     ("N1-basic-valido","Basic auth válido (len%4==0)",

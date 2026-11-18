@@ -45,13 +45,14 @@ import java.util.regex.Pattern;
 public final class Java4ShellFilter implements Filter {
 
     /**
-     * Mesma FORMA canônica das regras do repo (regras/README.md): um run Base64 contíguo, nos dois
-     * alfabetos ({@code +/} e url-safe {@code _-}), de {@code >=64} chars alinhado a quad, terminando
-     * em UM {@code '='}. O {@code {16,}+} é possessivo = anti-ReDoS (sem backtracking O(N²) num valor
-     * grande). {@code {16,}} casa 64 e 128 chars (os dois gatilhos documentados: JDK 21/25/27 e JDK 17).
+     * Mesma FORMA canônica das regras do repo (regras/README.md): um run Base64 contíguo de alfabeto
+     * PURO (padrão {@code +/} OU url-safe {@code _-}, nunca misto — o intrínseco usa um só), de
+     * {@code >=64} chars alinhado a quad, terminando em 1 OU 2 {@code '='} (lab: {@code A*64+"=="}
+     * também dispara; aceitar só um '=' era bypassável). O {@code {16,}+} é possessivo = anti-ReDoS.
+     * {@code {16,}} casa 64 e 128 chars (JDK 21/25/27 e JDK 17).
      */
     private static final Pattern TRIGGER = Pattern.compile(
-        "(?<![A-Za-z0-9+/_-])(?:[A-Za-z0-9+/_-]{4}){16,}+=(?![A-Za-z0-9+/_=-])");
+        "(?<![A-Za-z0-9+/_-])(?:(?:[A-Za-z0-9+/]{4}){16,}+|(?:[A-Za-z0-9_-]{4}){16,}+)={1,2}(?![A-Za-z0-9+/_=-])");
 
     /** Comprimento mínimo do gatilho (64 corpo + 1 '='); pré-filtro barato antes do regex. */
     private static final int MIN_LEN = 65;

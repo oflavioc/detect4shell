@@ -15,13 +15,13 @@ expostas no perímetro.
 ```
 config ips custom
     edit "Java4Shell.Base64.Auth"
-        set signature "F-SBID( --name \"Java4Shell.Base64.Auth\"; --protocol tcp; --service HTTP; --flow from_client; --context header; --pattern \"Authorization|3a 20|\"; --no_case; --pcre \"/(?<![A-Za-z0-9+\\/_-])(?:[A-Za-z0-9+\\/_-]{4}){16,}=(?![A-Za-z0-9+\\/_=-])/\"; --severity high; )"
+        set signature "F-SBID( --name \"Java4Shell.Base64.Auth\"; --protocol tcp; --service HTTP; --flow from_client; --context header; --pattern \"Authorization|3a 20|\"; --no_case; --pcre \"/(?<![A-Za-z0-9+\\/_-])(?:(?:[A-Za-z0-9+\\/]{4}){16,}|(?:[A-Za-z0-9_-]{4}){16,})={1,2}(?![A-Za-z0-9+\\/_=-])/\"; --severity high; )"
     next
     edit "Java4Shell.Base64.URI"
-        set signature "F-SBID( --name \"Java4Shell.Base64.URI\"; --protocol tcp; --service HTTP; --flow from_client; --context uri; --pcre \"/(?<![A-Za-z0-9+\\/_-])(?:[A-Za-z0-9+\\/_-]{4}){16,}(?:=(?![A-Za-z0-9+\\/_=-])|%3[dD])/\"; --severity high; )"
+        set signature "F-SBID( --name \"Java4Shell.Base64.URI\"; --protocol tcp; --service HTTP; --flow from_client; --context uri; --pcre \"/(?<![A-Za-z0-9+\\/_-])(?:(?:[A-Za-z0-9+\\/]{4}){16,}|(?:[A-Za-z0-9_-]{4}){16,})(?:={1,2}(?![A-Za-z0-9+\\/_=-])|%3[dD])/\"; --severity high; )"
     next
     edit "Java4Shell.Base64.Body"
-        set signature "F-SBID( --name \"Java4Shell.Base64.Body\"; --protocol tcp; --service HTTP; --flow from_client; --context body; --pcre \"/(?<![A-Za-z0-9+\\/_-])(?:[A-Za-z0-9+\\/_-]{4}){16,}(?:=(?![A-Za-z0-9+\\/_=-])|%3[dD])/\"; --severity high; )"
+        set signature "F-SBID( --name \"Java4Shell.Base64.Body\"; --protocol tcp; --service HTTP; --flow from_client; --context body; --pcre \"/(?<![A-Za-z0-9+\\/_-])(?:(?:[A-Za-z0-9+\\/]{4}){16,}|(?:[A-Za-z0-9_-]{4}){16,})(?:={1,2}(?![A-Za-z0-9+\\/_=-])|%3[dD])/\"; --severity high; )"
     next
 end
 ```

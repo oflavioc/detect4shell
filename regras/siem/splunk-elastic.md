@@ -26,7 +26,7 @@ index=os (source="*hs_err_pid*" OR ("SIGSEGV" AND ("StubRoutines" OR "_base64_de
 **3) Rede — forma do gatilho em Authorization/URI (proxy/WAF logs; rex é PCRE):**
 ```
 index=proxy
-| rex field=_raw "(?<j4s>(?<![A-Za-z0-9+/_-])(?:[A-Za-z0-9+/_-]{4}){16,}=(?![A-Za-z0-9+/_=-]))"
+| rex field=_raw "(?<j4s>(?<![A-Za-z0-9+/_-])(?:(?:[A-Za-z0-9+/]{4}){16,}|(?:[A-Za-z0-9_-]{4}){16,})={1,2}(?![A-Za-z0-9+/_=-]))"
 | where isnotnull(j4s)
 | stats count values(uri_path) as paths by src_ip, http_user_agent
 ```
@@ -61,7 +61,7 @@ FROM logs-java-*
 **3) Rede — forma do gatilho via regexp (Query DSL; aplique ao campo do header/uri):**
 ```json
 { "query": { "regexp": {
-  "http.request.headers.authorization": "([A-Za-z0-9+/_-]{4}){16,}=([^A-Za-z0-9+/_=-]|$)"
+  "http.request.headers.authorization": "(?:(?:[A-Za-z0-9+/]{4}){16,}|(?:[A-Za-z0-9_-]{4}){16,})={1,2}([^A-Za-z0-9+/_=-]|$)"
 } } }
 ```
 > `regexp` do Elasticsearch (Lucene) não suporta lookbehind — usamos a classe de fronteira à direita;

@@ -10,7 +10,7 @@
 # `IllegalArgumentException`, que pode ser ruidosa — correlacione com `java.util.Base64$Decoder`.
 # ATENÇÃO (backend sem lookbehind): os padrões `|re` abaixo usam lookbehind `(?<!...)`, que compila em
 # PCRE (Splunk/QRadar) mas NÃO em Elastic/Lucene nem KQL (RE2). Para esses, use a variante de fronteira
-# RE2: `(^|[^A-Za-z0-9+/_-])(?:[A-Za-z0-9+/_-]{4}){16,}=([^A-Za-z0-9+/_=-]|$)`.
+# RE2: `(^|[^A-Za-z0-9+/_-])(?:(?:[A-Za-z0-9+/]{4}){16,}|(?:[A-Za-z0-9_-]{4}){16,})={1,2}([^A-Za-z0-9+/_=-]|$)`.
 ---
 title: Java4Shell - Malformed Base64 trigger shape in HTTP request (network)
 id: 9f2a7c10-1d44-4b8e-9a01-java4shell-net1
@@ -25,10 +25,10 @@ logsource:
     category: proxy
 detection:
     malformed_tail:
-        - cs-uri-query|re: '(?<![A-Za-z0-9+/_-])(?:[A-Za-z0-9+/_-]{4}){16,}=(?:[^A-Za-z0-9+/_=-]|$)'
-        - cs-Authorization|re: '(?<![A-Za-z0-9+/_-])(?:[A-Za-z0-9+/_-]{4}){16,}=(?:[^A-Za-z0-9+/_=-]|$)'
-        - cs-Cookie|re: '(?<![A-Za-z0-9+/_-])(?:[A-Za-z0-9+/_-]{4}){16,}=(?:[^A-Za-z0-9+/_=-]|$)'
-        - cs-body|re: '(?<![A-Za-z0-9+/_-])(?:[A-Za-z0-9+/_-]{4}){16,}=(?:[^A-Za-z0-9+/_=-]|$)'
+        - cs-uri-query|re: '(?<![A-Za-z0-9+/_-])(?:(?:[A-Za-z0-9+/]{4}){16,}|(?:[A-Za-z0-9_-]{4}){16,})={1,2}(?:[^A-Za-z0-9+/_=-]|$)'
+        - cs-Authorization|re: '(?<![A-Za-z0-9+/_-])(?:(?:[A-Za-z0-9+/]{4}){16,}|(?:[A-Za-z0-9_-]{4}){16,})={1,2}(?:[^A-Za-z0-9+/_=-]|$)'
+        - cs-Cookie|re: '(?<![A-Za-z0-9+/_-])(?:(?:[A-Za-z0-9+/]{4}){16,}|(?:[A-Za-z0-9_-]{4}){16,})={1,2}(?:[^A-Za-z0-9+/_=-]|$)'
+        - cs-body|re: '(?<![A-Za-z0-9+/_-])(?:(?:[A-Za-z0-9+/]{4}){16,}|(?:[A-Za-z0-9_-]{4}){16,})={1,2}(?:[^A-Za-z0-9+/_=-]|$)'
     condition: malformed_tail
 level: medium
 tags: [attack.initial_access, attack.t1190, cve.2026.114938]
@@ -44,8 +44,8 @@ detection:
         - cs-uri-query|contains: ['SAMLRequest=', 'SAMLResponse=']
         - cs-body|contains: ['SAMLRequest=', 'SAMLResponse=']
     malformed_tail:
-        - cs-uri-query|re: '(?:[A-Za-z0-9+/%_-]{4}){16,}(?:=|%3[dD])'
-        - cs-body|re: '(?:[A-Za-z0-9+/%_-]{4}){16,}(?:=|%3[dD])'
+        - cs-uri-query|re: '(?:[A-Za-z0-9+/%_-]{4}){16,}(?:={1,2}|%3[dD])'
+        - cs-body|re: '(?:[A-Za-z0-9+/%_-]{4}){16,}(?:={1,2}|%3[dD])'
     condition: saml_param and malformed_tail
 level: high
 tags: [attack.initial_access, attack.t1190, cve.2026.114938]

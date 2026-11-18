@@ -39,20 +39,24 @@ MIN_PREPAD = 64  # o intrínseco só roda após um bloco completo de 64 chars (+
 def is_trigger_shape(token: str) -> bool:
     """True se `token` casa a FORMA do gatilho Base64-malformado do Java4Shell.
 
-    Escopo da validação (temurin 21.0.13, confinado): nessa build, o overflow disparou com um
-    corpo de 64 chars Base64 + EXATAMENTE um '=' (65 no total). 68/72/128/192/256 + '=' NÃO
-    dispararam — ou seja, o gatilho é um comprimento ESPECÍFICO por build (64 no JDK 21/25/27;
-    128 no JDK 17), não "qualquer múltiplo de 4". `A*64+"=="` (dois pads) e sem-'=' também não
-    disparam. A regra usa `{16,}` de propósito: pega 64 E 128 (os dois gatilhos documentados) e é
-    robusta a variações de build, aceitando super-casar comprimentos malformados que não disparam
-    (ok para detecção). Outras builds/APIs/normalizações não foram testadas."""
-    m = re.fullmatch(r'([A-Za-z0-9+/_-]+)=', token.strip())  # exatamente UM '=' no fim
+    Escopo da validação (temurin 21.0.13.0.2, confinado, two-arg decode): no PADRÃO FIXO do
+    reprodutor, o overflow disparou com corpo de 64 chars Base64 alinhado a quads + 1 OU 2 '='
+    (`A*64+"="` E `A*64+"=="` — AMBOS). Sem-'=' (65/66/67/68) e corpo não-alinhado NÃO dispararam.
+    O gatilho é um comprimento específico por build (64 no JDK 21/25/27; 128 no JDK 17); `{16,}`
+    pega 64 E 128. IMPORTANTE: o disparo da escrita OOB é HEAP-DEPENDENTE (precisa de bytes Base64
+    válidos logo após o buffer de decode) — reprodutível no padrão fixo do reprodutor, raro em
+    alocação arbitrária; por isso o crash é probabilístico. A regra super-casa comprimentos que
+    podem não disparar (ok p/ detecção)."""
+    m = re.fullmatch(r'([A-Za-z0-9+/_-]+)={1,2}', token.strip())  # 1-2 '=' (A*64+'==' tambem dispara — lab)
     if not m:
         return False
     body = m.group(1)
     if len(body) < MIN_PREPAD:          # precisa alcançar o bloco de 64 do intrínseco
         return False
     if len(body) % 4 != 0:              # prepad precisa ser quads Base64 completos (lab: não-alinhado não dispara)
+        return False
+    # alfabeto PURO: padrão (+/) OU url-safe (_-) — misto nunca dispara (o intrínseco usa um só) e só gera FP
+    if not (re.fullmatch(r'[A-Za-z0-9+/]+', body) or re.fullmatch(r'[A-Za-z0-9_-]+', body)):
         return False
     return True
 

@@ -7,17 +7,21 @@ recomenda** para quem ainda não corrigiu o Java ("validar a entrada Base64 no b
 
 ## Padrões canônicos (a "forma do gatilho")
 
-Ground truth de lab (temurin 21.0.13): o overflow dispara num **comprimento específico por build** —
-**64 chars + `=`** no JDK 21/25/27, **128 + `=`** no JDK 17. `68/72/128/192 + "="` (em JDK 21), `==`
-(dois pads) e sem-`=` **não** disparam. A regra usa `{16,}` de propósito — pega **64 e 128** (os dois
-gatilhos documentados) e é robusta a builds; **super-casa** comprimentos malformados que não disparam
-(aceitável para detecção). O `{16,}+` é **possessivo** (anti-ReDoS; RE2 já é linear, não precisa).
+Ground truth de lab (temurin 21.0.13.0.2, padrão fixo do reprodutor): o overflow dispara com corpo
+**alinhado a quads (múltiplo de 4, ≥64) + 1 OU 2 `=`** — **`A×64+"="` E `A×64+"=="`** (JDK 21/25/27;
+128 no JDK 17). Sem-`=` (65/66/67/68) e corpo não-alinhado **não** disparam. ⚠️ O **disparo** da escrita
+OOB é **heap-dependente** (precisa de bytes Base64 válidos logo após o buffer de decode) — reprodutível
+no padrão fixo, **raro** em alocação arbitrária; por isso o crash é probabilístico (ver
+[ANALISE](../docs/ANALISE.md)). A regra usa alfabeto **SPLIT** (padrão `+/` OU url-safe `_-`, nunca
+misto — reduz FP em paths REST), aceita **1-2 `=`** (aceitar só um era bypassável por `==`), e `{16,}`
+amplo (pega 64 e 128). O `{16,}+` é **possessivo** (anti-ReDoS). Variante low-FP: `{64,}` no lugar de
+`{16,}` casa só múltiplos de 64 (os strides reais do vetor AVX-512).
 
 | Motor de regex | Padrão |
 |---|---|
-| **PCRE** (Suricata, ModSecurity, nginx, FortiWeb, FortiGate, Splunk `rex`) | `(?<![A-Za-z0-9+/_-])(?:[A-Za-z0-9+/_-]{4}){16,}+=(?![A-Za-z0-9+/_=-])` |
-| **RE2 / sem-lookbehind** (AWS WAF, Cloudflare, Elastic `regexp`, FortiAnalyzer) | `(^\|[^A-Za-z0-9+/_-])(?:[A-Za-z0-9+/_-]{4}){16,}=([^A-Za-z0-9+/_=-]\|$)` |
-| **+ `=` percent-encoded (`%3D`)** p/ URI/corpo brutos | `…{16,}+(?:=(?![A-Za-z0-9+/_=-])\|%3[dD])` |
+| **PCRE** (Suricata, ModSecurity, nginx, FortiWeb, FortiGate, Splunk `rex`) | `(?<![A-Za-z0-9+/_-])(?:(?:[A-Za-z0-9+/]{4}){16,}+\|(?:[A-Za-z0-9_-]{4}){16,}+)={1,2}(?![A-Za-z0-9+/_=-])` |
+| **RE2 / sem-lookbehind** (AWS WAF, Cloudflare, Elastic `regexp`, FortiAnalyzer) | `(^\|[^A-Za-z0-9+/_-])(?:(?:[A-Za-z0-9+/]{4}){16,}\|(?:[A-Za-z0-9_-]{4}){16,})={1,2}([^A-Za-z0-9+/_=-]\|$)` |
+| **+ `=` percent-encoded (`%3D`)** p/ URI/corpo brutos | `…={1,2}(?![A-Za-z0-9+/_=-])` ou o ramo `(?:={1,2}…\|%3[dD])` |
 
 > **Evasão (regras de rede são pré-normalização):** `%3D`, `=` (JSON) e `&#61;` (XML/SAML) passam no
 > sensor e chegam decodificados ao `Base64.decode`. Normalize antes do match quando possível (ex.: ModSec
