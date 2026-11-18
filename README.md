@@ -76,13 +76,14 @@ OpenJDK **21.0.13**, sem patch em 2026-11-18) num host AVX-512 VBMI, usando só 
 | `-XX:-UseBASE64Intrinsics` | **NÃO REPRODUZIDO** (`changed=0`) — mitigação confirmada |
 | `-XX:UseAVX=2` | **NÃO REPRODUZIDO** (`changed=0`) — mitigação confirmada |
 
-Também mapeamos **quais comprimentos disparam** (ground truth, nessa build): **só `A×64 + "="`** —
-`A×68 / 72 / 128 / 192 / 256 + "="` **NÃO disparam**. O gatilho é um **comprimento específico por build**
-(64 no JDK 21/25/27; **128 é o do JDK 17**), **não** "qualquer múltiplo de 4 ≥64" — essa precisão foi
-pedida por revisores cross-vendor e confirmada em lab. `A×64+"=="` (dois pads) e sem-`=` também não
-disparam. A regra usa `{16,}` **de propósito** — pega **64 e 128** (os dois gatilhos documentados) e é
-robusta a variações de build; aceita **super-casar** comprimentos malformados que não disparam (ok para
-detecção). Outras builds/APIs não foram testadas.
+Também mapeamos **o que dispara** (ground truth em lab, padrão fixo do reprodutor, temurin 21.0.13.0.2):
+**64 chars Base64 alinhados a quad + 1 OU 2 `=`** — ou seja **`A×64+"="` E `A×64+"=="`** (128 no JDK 17).
+Sem-`=` (`A×65/66/67/68`) e comprimentos não-alinhados **não** disparam. ⚠️ **Importante:** o **disparo** da
+escrita é **heap-dependente** (100% no padrão do reprodutor, ~0% com arrays frescos) — por isso o crash é
+probabilístico e um exploit confiável faz *heap grooming*. Aceitar **só um `=`** era um **bypass** (`==`
+dispara **igual**) — corrigido para `={1,2}`, validado em edge ao vivo. A regra usa `{16,}` **de propósito**
+(pega **64 e 128**) e **super-casa** comprimentos que podem não disparar (ok para detecção). Outras
+builds/APIs não foram exaustivamente testadas.
 
 ## A detecção generalizada (e a prova)
 

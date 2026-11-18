@@ -3,10 +3,10 @@
  * Sink pre-auth classico: decodifica o credential de `Authorization: Basic`.
  *
  * Por request, faz uma verificacao INSTRUMENTADA do primitivo de corrupcao: decodifica num
- * buffer-sentinela e conta quantos bytes foram escritos FORA do fim logico da saida. Isso prova,
- * de forma deterministica, que a violacao de memoria (CVE-2026-114938) disparou para aquele
- * request. (O crash de processo / DoS e a escalacao PROBABILISTICA do mesmo primitivo — a escrita
- * OOB normalmente cai em slack de TLAB e nao derruba na hora.)
+ * buffer-sentinela e conta quantos bytes foram escritos FORA do fim logico da saida. Isso MEDE,
+ * por request, se a violacao de memoria (CVE-2026-114938) disparou para aquele request. ATENCAO: o
+ * DISPARO em si e HEAP-DEPENDENTE (ver docs/ANALISE.md) e o crash/DoS e a escalacao PROBABILISTICA do
+ * mesmo primitivo; este alvo usa o padrao do reprodutor, entao a medicao e estavel (sinal de lab, nao IoC).
  *
  * SO PARA LAB / LOCALHOST. Alvo de teste de defesa, nao exploit: o "payload" e a string Base64
  * malformada ja publica (A*64 + "="); toda consequencia fica dentro do processo. Nao exponha.
