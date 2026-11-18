@@ -15,7 +15,7 @@ import detect4shell as d
 # não-Base64. Validado em lab: o overflow só dispara com corpo alinhado a quads (múltiplo
 # de 4, >=64) + UM '='; `A*65+"="` (não-alinhado) e `A*64+"=="` (dois pads) NÃO disparam,
 # então são corretamente excluídos. Base64 válido (% 4 == 0) também é excluído.
-ENGINE_PCRE = re.compile(r'(?<![A-Za-z0-9+/_-])(?:[A-Za-z0-9+/_-]{4}){16,}=(?![A-Za-z0-9+/_=-])')
+ENGINE_PCRE = re.compile(r'(?<![A-Za-z0-9+/_-])(?:[A-Za-z0-9+/_-]{4}){16,}+=(?![A-Za-z0-9+/_=-])')
 
 B64_STD_64 = ("Zm9vYmFy" * 8)[:64]          # 64 chars do alfabeto padrão, não-'A'
 B64_URLSAFE_64 = ("Zm9v-mF_" * 8)[:64]      # 64 chars incl. url-safe '-' e '_'

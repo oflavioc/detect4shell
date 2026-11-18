@@ -38,10 +38,13 @@ Basic ou URL** (MIME não é afetado).
 
 ## O que as fontes realmente mostram (honestidade sobre impacto)
 
-Corroboramos **13 fontes** (OpenJDK/Oracle, CISA, Calif.io, Amazon ALAS, Blackpoint, Chainguard, Talos,
-VulnCheck, Wiz, Aikido, The Hacker News). Consenso:
+Cruzamos **13 fontes** (OpenJDK/Oracle, CISA, Calif.io, Amazon ALAS, Blackpoint, Chainguard, Talos,
+VulnCheck, Wiz, Aikido, The Hacker News) — que em geral **ecoam o advisory original**, não são 13
+confirmações independentes. Consenso:
 
-- ✅ **Demonstrado (unauth):** **crash da JVM (DoS)** + **vazamento local de heap ("JavaBleed")**.
+- ✅ **Reproduzido por nós (lab confinado):** escrita **OOB de 62 bytes** (`changed=62 first=50 last=111`),
+  consistente com o sintoma do descobridor. **Reportado pelas fontes** (não demonstrado por nós em
+  produção): **crash (DoS)** + **leak local de heap ("JavaBleed")**.
 - ⚠️ **Alegado, não reproduzido publicamente:** **RCE**. O próprio descobridor publica que o padrão do
   overflow é **fixo** (não controlado) e que o caminho ingênuo de exploração **falha**; os labs
   independentes só chegaram a **crash + leak**. A cadeia funcional é **retida**. Amazon e OpenJDK pontuam
@@ -64,9 +67,13 @@ OpenJDK **21.0.13**, sem patch em 2026-11-18) num host AVX-512 VBMI, usando só 
 | `-XX:-UseBASE64Intrinsics` | **NÃO REPRODUZIDO** (`changed=0`) — mitigação confirmada |
 | `-XX:UseAVX=2` | **NÃO REPRODUZIDO** (`changed=0`) — mitigação confirmada |
 
-Também mapeamos **quais formas disparam** (ground truth): só **corpo alinhado a quads (múltiplo de 4,
-≥64) + EXATAMENTE um `=`**. `A×64+"=="` (dois pads), sem-`=` e prepad não-alinhado **NÃO disparam** — e
-por isso são corretamente excluídos pela detecção.
+Também mapeamos **quais comprimentos disparam** (ground truth, nessa build): **só `A×64 + "="`** —
+`A×68 / 72 / 128 / 192 / 256 + "="` **NÃO disparam**. O gatilho é um **comprimento específico por build**
+(64 no JDK 21/25/27; **128 é o do JDK 17**), **não** "qualquer múltiplo de 4 ≥64" — essa precisão foi
+pedida por revisores cross-vendor e confirmada em lab. `A×64+"=="` (dois pads) e sem-`=` também não
+disparam. A regra usa `{16,}` **de propósito** — pega **64 e 128** (os dois gatilhos documentados) e é
+robusta a variações de build; aceita **super-casar** comprimentos malformados que não disparam (ok para
+detecção). Outras builds/APIs não foram testadas.
 
 ## A detecção generalizada (e a prova)
 
@@ -76,10 +83,13 @@ alfabeto padrão e sem cobertura de SAML** — trivialmente evadíveis. A detec�
 Base64 (Basic/Bearer/SAML/cookie/param), **nos dois alfabetos**:
 
 ```
-(?<![A-Za-z0-9+/_-])(?:[A-Za-z0-9+/_-]{4}){16,}=(?![A-Za-z0-9+/_=-])
+(?<![A-Za-z0-9+/_-])(?:[A-Za-z0-9+/_-]{4}){16,}+=(?![A-Za-z0-9+/_=-])
 ```
-≥16 "quads" Base64 (64 chars, padrão `+/` **ou** url-safe `_-`), ancorado ao início do token, + **um** `=`
-numa fronteira não-Base64. Base64 válido (`%4==0`) e as formas que o lab provou não-disparar são excluídos.
+≥16 "quads" Base64 (≥64 chars), ancorado ao início do token (lookbehind), + **um** `=` numa fronteira
+não-Base64. O `{16,}+` é **possessivo** — evita backtracking O(N²)/ReDoS ao varrer um blob Base64 grande
+(apontado em review). Precisões honestas: a classe-união `[A-Za-z0-9+/_-]` **não distingue** o alfabeto
+padrão (`+/`) do url-safe (`_-`), então **super-casa** strings de alfabeto misturado; e a regra casa a
+forma **contígua no buffer** que o sensor inspeciona — veja a nota de evasão abaixo.
 
 **Prova** ([`testes/validar.py`](testes/validar.py), só vetores benignos — `python -I testes/validar.py`):
 
@@ -89,13 +99,17 @@ numa fronteira não-Base64. Base64 válido (`%4==0`) e as formas que o lab provo
 | **Detect4Shell** (PCRE das regras) | **16/16** | **0** |
 | abordagem exata-A/Basic-only | 10/16 | 1 |
 
-**5 gatilhos reais que a abordagem antiga perde e o Detect4Shell pega:** SAML no corpo, SAML na query,
-alfabeto url-safe, valor de cookie, parâmetro de query genérico. (E a abordagem exata-A ainda gera 1
-falso-positivo que o Detect4Shell não gera.)
+**5 FORMAS de gatilho representativas que a abordagem antiga perde e o Detect4Shell pega:** SAML no corpo,
+SAML na query, alfabeto url-safe, valor de cookie, parâmetro de query genérico. (E a abordagem exata-A
+ainda gera 1 falso-positivo que o Detect4Shell não gera.) São **casamentos de forma** representativos de
+uso real — não crashes executados em cada JDK.
 
-> **Honestidade sobre "0 FP":** é **0 falso-positivo nos vetores curados** do teste. A forma pode, raramente,
-> aparecer em tráfego legítimo malformado (imagens data-URI, URLs pré-assinadas S3 com assinaturas longas) —
-> por isso um hit único de rede é confiança **baixa/média**; escale por correlação (veja abaixo).
+> **Honestidade (pedida pelos revisores cross-vendor):** o "16/16" é **8 TP / 8 TN num conjunto curado de
+> 16 vetores** — é um **teste unitário**, não uma taxa de FP de produção. A **baseline** é a NOSSA
+> reconstrução de uma regra exata-A/Basic (um PoC estreito), **não** o upstream como enviado — por isso
+> rotulamos "exata-A/Basic-only". A forma pode aparecer em tráfego legítimo malformado (data-URI, URLs
+> pré-assinadas S3, slugs/tokens longos com `-_` terminando em `=`), então um hit de rede único é confiança
+> **baixa/média** — escale por correlação (veja abaixo).
 
 ## Engines — detectar e prevenir (12)
 
@@ -120,17 +134,27 @@ Usa Fortinet? Veja o mapa do Fabric: [**docs/FORTINET-FABRIC.md**](docs/FORTINET
 
 A CISA (alerta de 2026-11-17) recomenda, para quem não pode corrigir já: *"**restricting and validating
 Base64 input at the application boundary**, enforcing input-size limits, and limiting unauthenticated
-access."* As regras WAF/proxy do Detect4Shell (ModSecurity, nginx, FortiWeb, AWS/Cloudflare) são a
-**implementação aberta** desse controle compensatório. **Não substitui corrigir o JDK** — é a trava
-enquanto o patch não chega a todo lugar.
+access."* As regras WAF/proxy do Detect4Shell (ModSecurity, nginx, FortiWeb, AWS/Cloudflare) são **uma**
+implementação aberta desse controle — mas no **boundary de REDE**, que pode ser evadido por encoding
+(veja a nota abaixo). O boundary de **aplicação** de fato exige **normalizar/decodificar antes do match**
+(ex.: transforms `t:urlDecodeUni`/`t:jsDecode` no ModSec) ou desligar o intrínseco na própria JVM
+(`-XX:-UseBASE64Intrinsics`). **Nada disso substitui corrigir o JDK.**
 
-## Nota de evasão — `=` percent-encoded (`%3D`)
+## Nota de evasão — regras de rede operam PRÉ-normalização
 
-As regras de forma casam o `=` **literal**. Em parâmetros de URL/corpo, o `=` pode vir como `%3D`:
-- **Engines que decodificam URL** (Suricata `http.uri`, ModSecurity `ARGS`, AWS/Cloudflare com `URL_DECODE`)
-  veem o `=` literal e pegam normalmente.
-- **Buffers brutos** (Suricata `http.request_body`, nginx `$args`, FortiWeb URI/corpo) usam a variante
-  `(?:=…|%3[dD])` já incluída. Dupla codificação (`%253D`) é caso de borda — prefira **corrigir o JDK**.
+As regras casam a forma **contígua e literal** no buffer. A vuln dispara no sink `Base64.decode` da JVM,
+**depois** do parsing de protocolo/framework. Então há evasões que o WAF/IDS não vê, mas que entregam a
+forma ao JVM (divulgado abertamente — pedido pelos revisores):
+- **`=` percent-encoded (`%3D`):** engines que decodificam URL (Suricata `http.uri`, ModSec `ARGS`,
+  AWS/Cloudflare com `URL_DECODE`) pegam; buffers brutos usam a variante `(?:=…|%3[dD])` — que é **mais
+  ampla, não equivalente** (não exige pad único). Dupla codificação (`%253D`) é caso de borda.
+- **Escape JSON/XML:** `=` (JSON) e `&#61;`/`&#x3d;` (XML/SAML) passam no WAF e chegam **decodificados**
+  ao parser → `Base64.decode`. **Mitigação:** aplique normalização antes do match
+  (ModSec: `t:urlDecodeUni,t:jsDecode,t:htmlEntityDecode`).
+- **Precisão (contra um erro comum):** o decoder **MIME** (`getMimeDecoder`) **NÃO é vulnerável** — toma o
+  caminho escalar, não o intrínseco AVX-512. Então "MIME line-wrap" **não é** evasão contra este bug. Os
+  sinks vulneráveis são `getDecoder` (Basic) e `getUrlDecoder` (confirmado em lab).
+- Nenhuma regra de rede substitui **corrigir o JDK**.
 
 ## Confiança e falsos-positivos
 

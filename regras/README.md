@@ -7,15 +7,21 @@ recomenda** para quem ainda não corrigiu o Java ("validar a entrada Base64 no b
 
 ## Padrões canônicos (a "forma do gatilho")
 
-Validado em laboratório: o overflow só dispara com **>=64 chars Base64 em quads completos + UM `=`**
-(ex.: `64×"A" + "="`; `128×"A" + "="` no JDK 17). `==` (dois pads), sem-`=`, e prepad não-alinhado
-**não** disparam, então são excluídos.
+Ground truth de lab (temurin 21.0.13): o overflow dispara num **comprimento específico por build** —
+**64 chars + `=`** no JDK 21/25/27, **128 + `=`** no JDK 17. `68/72/128/192 + "="` (em JDK 21), `==`
+(dois pads) e sem-`=` **não** disparam. A regra usa `{16,}` de propósito — pega **64 e 128** (os dois
+gatilhos documentados) e é robusta a builds; **super-casa** comprimentos malformados que não disparam
+(aceitável para detecção). O `{16,}+` é **possessivo** (anti-ReDoS; RE2 já é linear, não precisa).
 
 | Motor de regex | Padrão |
 |---|---|
-| **PCRE** (Suricata, ModSecurity, nginx, FortiWeb, Splunk `rex`) | `(?<![A-Za-z0-9+/_-])(?:[A-Za-z0-9+/_-]{4}){16,}=(?![A-Za-z0-9+/_=-])` |
+| **PCRE** (Suricata, ModSecurity, nginx, FortiWeb, FortiGate, Splunk `rex`) | `(?<![A-Za-z0-9+/_-])(?:[A-Za-z0-9+/_-]{4}){16,}+=(?![A-Za-z0-9+/_=-])` |
 | **RE2 / sem-lookbehind** (AWS WAF, Cloudflare, Elastic `regexp`, FortiAnalyzer) | `(^\|[^A-Za-z0-9+/_-])(?:[A-Za-z0-9+/_-]{4}){16,}=([^A-Za-z0-9+/_=-]\|$)` |
-| **+ `=` percent-encoded (`%3D`)** p/ URI/corpo brutos | `…{16,}(?:=(?![A-Za-z0-9+/_=-])\|%3[dD])` |
+| **+ `=` percent-encoded (`%3D`)** p/ URI/corpo brutos | `…{16,}+(?:=(?![A-Za-z0-9+/_=-])\|%3[dD])` |
+
+> **Evasão (regras de rede são pré-normalização):** `%3D`, `=` (JSON) e `&#61;` (XML/SAML) passam no
+> sensor e chegam decodificados ao `Base64.decode`. Normalize antes do match quando possível (ex.: ModSec
+> `t:urlDecodeUni,t:jsDecode`). O MIME decoder **não** é vulnerável, então line-wrap MIME **não** é evasão.
 
 ## Engines disponíveis
 

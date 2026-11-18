@@ -37,11 +37,15 @@ MIN_PREPAD = 64  # o intrínseco só roda após um bloco completo de 64 chars (+
 
 
 def is_trigger_shape(token: str) -> bool:
-    """True se `token` casa a forma do gatilho Base64-malformado do Java4Shell.
+    """True se `token` casa a FORMA do gatilho Base64-malformado do Java4Shell.
 
-    Validado em laboratório (JDK 21.0.13, confinado): o overflow só dispara com
-    EXATAMENTE UM '=' final E com o corpo alinhado a quads (múltiplo de 4) e >= 64.
-    `A*65+"="` (prepad não-alinhado) e `A*64+"=="` (dois pads) NÃO disparam."""
+    Escopo da validação (temurin 21.0.13, confinado): nessa build, o overflow disparou com um
+    corpo de 64 chars Base64 + EXATAMENTE um '=' (65 no total). 68/72/128/192/256 + '=' NÃO
+    dispararam — ou seja, o gatilho é um comprimento ESPECÍFICO por build (64 no JDK 21/25/27;
+    128 no JDK 17), não "qualquer múltiplo de 4". `A*64+"=="` (dois pads) e sem-'=' também não
+    disparam. A regra usa `{16,}` de propósito: pega 64 E 128 (os dois gatilhos documentados) e é
+    robusta a variações de build, aceitando super-casar comprimentos malformados que não disparam
+    (ok para detecção). Outras builds/APIs/normalizações não foram testadas."""
     m = re.fullmatch(r'([A-Za-z0-9+/_-]+)=', token.strip())  # exatamente UM '=' no fim
     if not m:
         return False
