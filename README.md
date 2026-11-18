@@ -8,7 +8,7 @@
 Ferramenta **defensiva** para a comunidade: ajuda times a **identificar** se estão expostos, **detectar**
 tentativas e **prevenir** na borda — com instruções simples, passo a passo.
 
-![CVE](https://img.shields.io/badge/CVE-2026--114938-critical) ![Licença](https://img.shields.io/badge/licen%C3%A7a-MIT-blue) ![Escopo](https://img.shields.io/badge/escopo-defensivo-green) ![Engines](https://img.shields.io/badge/engines-12-blue)
+![CVE](https://img.shields.io/badge/CVE-2026--114938-critical) ![Licença](https://img.shields.io/badge/licen%C3%A7a-MIT-blue) ![Escopo](https://img.shields.io/badge/escopo-defensivo-green) ![Engines](https://img.shields.io/badge/engines-11-blue)
 
 > **🐣 Nunca ouviu falar? Comece aqui:** [**docs/EXPLICACAO-SIMPLES.md**](docs/EXPLICACAO-SIMPLES.md) —
 > o ataque explicado como para alguém de 10 anos (o que é, como funciona, implicações, e onde achar na
@@ -93,12 +93,13 @@ alfabeto padrão e sem cobertura de SAML** — trivialmente evadíveis. A detec�
 Base64 (Basic/Bearer/SAML/cookie/param), **nos dois alfabetos**:
 
 ```
-(?<![A-Za-z0-9+/_-])(?:[A-Za-z0-9+/_-]{4}){16,}+=(?![A-Za-z0-9+/_=-])
+(?<![A-Za-z0-9+/_-])(?:(?:[A-Za-z0-9+/]{4}){16,}+|(?:[A-Za-z0-9_-]{4}){16,}+)={1,2}(?![A-Za-z0-9+/_=-])
 ```
-≥16 "quads" Base64 (≥64 chars), ancorado ao início do token (lookbehind), + **um** `=` numa fronteira
-não-Base64. O `{16,}+` é **possessivo** — evita backtracking O(N²)/ReDoS ao varrer um blob Base64 grande
-(apontado em review). Precisões honestas: a classe-união `[A-Za-z0-9+/_-]` **não distingue** o alfabeto
-padrão (`+/`) do url-safe (`_-`), então **super-casa** strings de alfabeto misturado; e a regra casa a
+≥16 "quads" Base64 (≥64 chars), ancorado ao início do token (lookbehind), + **1 ou 2** `=` numa fronteira
+não-Base64 (`=` **e** `==` disparam — aceitar só um era bypassável). O `{16,}+` é **possessivo** (anti-ReDoS).
+Precisões honestas: o run casado é de **alfabeto PURO** (padrão `+/` **ou** url-safe `_-`, nunca misto — o
+intrínseco usa um só), então **não** casa strings de alfabeto misturado (menos FP em paths REST); a
+classe-união `[A-Za-z0-9+/_-]` fica **só** nos anchors de fronteira (lookbehind/lookahead). A regra casa a
 forma **contígua no buffer** que o sensor inspeciona — veja a nota de evasão abaixo.
 
 **Prova** ([`testes/validar.py`](testes/validar.py), só vetores benignos — `python -I testes/validar.py`):
@@ -121,7 +122,7 @@ uso real — não crashes executados em cada JDK.
 > pré-assinadas S3, slugs/tokens longos com `-_` terminando em `=`), então um hit de rede único é confiança
 > **baixa/média** — escale por correlação (veja abaixo).
 
-## Engines — detectar e prevenir (12)
+## Engines — detectar e prevenir (11)
 
 Todas as regras partem da mesma forma validada. Índice e padrões canônicos: [**regras/README.md**](regras/README.md).
 
@@ -133,7 +134,8 @@ Todas as regras partem da mesma forma validada. Índice e padrões canônicos: [
 | nginx (borda) | ✅ | ✅ | [`regras/nginx/`](regras/nginx/detect4shell.conf) |
 | **FortiWeb** (WAF) | ✅ | ✅ | [`regras/fortiweb/`](regras/fortiweb/detect4shell.md) |
 | **FortiGate IPS** | ✅ | ✅ | [`regras/fortigate-ips/`](regras/fortigate-ips/detect4shell.md) |
-| AWS WAF / Cloudflare | ✅ | ✅ | [`regras/cloud-waf/`](regras/cloud-waf/) |
+| AWS WAFv2 | ✅ | ✅ | [`regras/cloud-waf/`](regras/cloud-waf/aws-waf.json) |
+| Cloudflare WAF | ✅ | ✅ | [`regras/cloud-waf/`](regras/cloud-waf/cloudflare.md) |
 | YARA (arquivos/forense) | ✅ | — | [`regras/yara/`](regras/yara/detect4shell.yar) |
 | Splunk / Elastic | ✅ | — | [`regras/siem/`](regras/siem/splunk-elastic.md) |
 | **FortiSIEM / FortiAnalyzer** | ✅ | — | [`regras/siem/`](regras/siem/fortisiem-fortianalyzer.md) |
@@ -196,7 +198,7 @@ forma ao JVM (divulgado abertamente — pedido pelos revisores):
 - [`docs/ANALISE.md`](docs/ANALISE.md) — análise técnica resumida (mecânica + versões).
 - [`docs/FORTINET-FABRIC.md`](docs/FORTINET-FABRIC.md) — como o Fortinet Fabric cobre, por função.
 - [`docs/ARTE-PROMPTS.md`](docs/ARTE-PROMPTS.md) — kit de prompts de arte + style guide da identidade visual (`docs/banner.png` é a social-preview exportada daí).
-- [`regras/`](regras/) — todas as regras (12 engines) + [índice/padrões canônicos](regras/README.md).
+- [`regras/`](regras/) — todas as regras (11 engines) + [índice/padrões canônicos](regras/README.md).
 - [`deteccao/`](deteccao/) + [`testes/`](testes/) — a lógica e a prova.
 - [`scanner/`](scanner/) — verificador **passivo** de exposição (1 GET benigno por endpoint).
 - [`laboratorio/`](laboratorio/) — reprodução confinada + `verificar_patch.sh`.

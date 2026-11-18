@@ -17,7 +17,7 @@ id: 9f2a7c10-1d44-4b8e-9a01-java4shell-net1
 status: experimental
 description: >
     Detects the CVE-2026-114938 trigger shape - a base64 run of >=64 chars (standard
-    or url-safe alphabet) followed by a single '=' making total length %4 != 0 - in any
+    or url-safe alphabet) followed by one or two '=' (A*64+'=' and '==' both fire) - in any
     request header, URI/query, body or cookie. Covers SAML/Bearer/cookie/param sinks the
     Basic-auth-only rules miss. SHAPE match: treat single hits as low/medium, escalate on
     warm-up or crash correlation.

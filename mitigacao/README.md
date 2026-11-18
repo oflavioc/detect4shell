@@ -32,8 +32,8 @@ inspeciona o corpo bruto de JSON/XML (para não consumir/quebrar o stream da app
 Base64 dentro de um corpo JSON, conte com a **flag de JVM** (camada 2) ou a **regra de borda**.
 
 **Validação (feita neste repo):** compila limpo em `jakarta.servlet` 6.0.0 **e** `javax.servlet`
-4.0.1; spot-check do padrão no motor de regex do Java = **9/9** (gatilho de 64 e 128 chars, os dois
-alfabetos e em `Authorization` casam; `==`, sem-`=`, JWT-like, base64 curto e `<64` chars **não**).
+4.0.1; spot-check do padrão no motor de regex do Java = **10/10** (gatilho de 64 e 128 chars, os dois
+alfabetos, `Authorization` **e `==`** casam; path REST misto, 3-pad, base64 válido, JWT-like e `<64` chars **não**).
 
 ### Como implantar
 
