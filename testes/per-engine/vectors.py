@@ -91,3 +91,12 @@ _adv("AN8-15-quads", "A" * 60 + "=", False, "15-quads")
 _adv("AN9-nonaligned-63", "A" * 63 + "=", False, "nonaligned-63")
 _adv("AN10-valid-doublepad", _S64 + "QQ==", False, "valid-b64-doublepad")
 _adv("AN11-prepad65", _S64 + "Q=", False, "prepad65-unaligned")
+
+# reviewer-raised regression guards (valid encodings that must NOT alert)
+_V = base64.b64encode(b"SAML-ASSERTION-xmlns-payload-" * 15).decode()
+_adv("AN12-urlenc-valid-saml", _V.replace("+", "%2B").replace("/", "%2F").replace("=", "%3D"), False,
+     "url-encoded-valid-saml")
+_adv("AN13-mime-wrapped-valid", "\r\n".join(_V[i:i + 76] for i in range(0, len(_V), 76)), False,
+     "mime-linewrapped-valid")
+_adv("AN14-base64url-valid", base64.urlsafe_b64encode(b"jwt-ish-token-data-" * 12).decode(), False,
+     "base64url-valid")
