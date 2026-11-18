@@ -184,6 +184,7 @@ forma ao JVM (divulgado abertamente — pedido pelos revisores):
 - [`deteccao/`](deteccao/) + [`testes/`](testes/) — a lógica e a prova.
 - [`scanner/`](scanner/) — verificador **passivo** de exposição (1 GET benigno por endpoint).
 - [`laboratorio/`](laboratorio/) — reprodução confinada + `verificar_patch.sh`.
+- [`demo/`](demo/) — **ataque vs. defesa ao vivo**: alvo Java vulnerável + edge nginx (regra do repo) que bloqueia na borda; passo a passo com os resultados reais.
 
 ## Créditos e licença
 
