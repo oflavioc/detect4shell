@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" style="display: block" role="img" aria-label="Detect4Shell mascot: a chubby blue-eyed tabby cat meowing behind a mint-green shield with a check mark, in front of a wall of letter A characters, with a red equals sign beside it">
+<defs>
+<pattern id="logo-wall" patternUnits="userSpaceOnUse" x="0" y="0" width="85.3333" height="102.4">
+<text x="42.6667" y="77" text-anchor="middle" font-family="'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace" font-size="72" font-weight="700" fill="#5b6b85">A</text>
+</pattern>
+<g id="logo-sil">
+<polygon points="292,318 304,142 452,232"></polygon>
+<polygon points="668,318 656,142 508,232"></polygon>
+<ellipse cx="480" cy="715" rx="250" ry="215"></ellipse>
+<ellipse cx="300" cy="915" rx="62" ry="34"></ellipse>
+<ellipse cx="660" cy="915" rx="62" ry="34"></ellipse>
+<ellipse cx="480" cy="400" rx="232" ry="196"></ellipse>
+</g>
+<clipPath id="logo-body">
+<ellipse cx="480" cy="715" rx="250" ry="215"></ellipse>
+</clipPath>
+<clipPath id="logo-head">
+<ellipse cx="480" cy="400" rx="232" ry="196"></ellipse>
+</clipPath>
+</defs>
+
+<rect x="0" y="0" width="1024" height="1024" fill="#0b0e14"></rect>
+<rect x="0" y="0" width="1024" height="1024" fill="url(#logo-wall)" opacity="0.24"></rect>
+
+<g transform="translate(0 -33)">
+
+<path d="M 265 850 C 150 880 90 790 150 700" fill="none" stroke="#f2efe6" stroke-width="84" stroke-linecap="round"></path>
+<path d="M 265 850 C 150 880 90 790 150 700" fill="none" stroke="#a4a5a8" stroke-width="56" stroke-linecap="round"></path>
+<path d="M 265 850 C 150 880 90 790 150 700" fill="none" stroke="#3a3b41" stroke-width="56" stroke-dasharray="15 38" stroke-dashoffset="-24"></path>
+
+<use href="#logo-sil" fill="#f2efe6" stroke="#f2efe6" stroke-width="36" stroke-linejoin="round"></use>
+<use href="#logo-sil" fill="#a4a5a8" stroke="#a4a5a8" stroke-width="8" stroke-linejoin="round"></use>
+
+<g clip-path="url(#logo-body)">
+<ellipse cx="480" cy="720" rx="132" ry="190" fill="#c9cacc"></ellipse>
+<g fill="none" stroke="#3a3b41" stroke-width="15" stroke-linecap="round">
+<path d="M 240 690 C 274 694 300 706 322 726"></path>
+<path d="M 234 752 C 268 754 296 764 318 784"></path>
+<path d="M 244 814 C 274 812 298 820 320 836"></path>
+<path d="M 720 690 C 686 694 660 706 638 726"></path>
+<path d="M 726 752 C 692 754 664 764 642 784"></path>
+<path d="M 716 814 C 686 812 662 820 640 836"></path>
+</g>
+</g>
+
+<ellipse cx="300" cy="915" rx="62" ry="34" fill="#e7e6e3" stroke="#e7e6e3" stroke-width="10"></ellipse>
+<ellipse cx="660" cy="915" rx="62" ry="34" fill="#e7e6e3" stroke="#e7e6e3" stroke-width="10"></ellipse>
+<g fill="none" stroke="#0b0e14" stroke-width="6" stroke-linecap="round">
+<path d="M 285 906 L 285 926"></path>
+<path d="M 315 906 L 315 926"></path>
+<path d="M 645 906 L 645 926"></path>
+<path d="M 675 906 L 675 926"></path>
+</g>
+
+<g fill="#76777c" stroke="#76777c" stroke-width="8" stroke-linejoin="round">
+<polygon points="292,318 304,142 452,232"></polygon>
+<polygon points="668,318 656,142 508,232"></polygon>
+</g>
+<ellipse cx="480" cy="400" rx="232" ry="196" fill="#a4a5a8" stroke="#a4a5a8" stroke-width="8"></ellipse>
+
+<g clip-path="url(#logo-head)">
+<path d="M 480 430 C 430 440 372 480 370 535 C 370 590 430 612 480 612 C 530 612 590 590 590 535 C 588 480 530 440 480 430 Z" fill="#e7e6e3"></path>
+<g fill="none" stroke="#3a3b41" stroke-width="13" stroke-linecap="round">
+<path d="M 480 226 L 480 296"></path>
+<path d="M 446 230 C 446 255 450 280 456 300"></path>
+<path d="M 514 230 C 514 255 510 280 504 300"></path>
+<path d="M 410 244 C 412 265 420 285 432 302"></path>
+<path d="M 550 244 C 548 265 540 285 528 302"></path>
+<path d="M 336 410 C 312 402 290 402 262 410"></path>
+<path d="M 336 440 C 314 436 294 438 268 448"></path>
+<path d="M 624 410 C 648 402 670 402 698 410"></path>
+<path d="M 624 440 C 646 436 666 438 692 448"></path>
+</g>
+</g>
+
+<g fill="#d3a99c" stroke="#d3a99c" stroke-width="8" stroke-linejoin="round">
+<polygon points="326,262 328,192 398,236"></polygon>
+<polygon points="634,262 632,192 562,236"></polygon>
+</g>
+
+<path d="M 330 548 A 232 196 0 0 0 630 548" fill="none" stroke="#0b0e14" stroke-width="10" stroke-linecap="round"></path>
+
+<g fill="none" stroke="#f2efe6" stroke-width="7" stroke-linecap="round">
+<path d="M 318 470 L 205 448"></path>
+<path d="M 318 500 L 200 508"></path>
+<path d="M 642 470 L 755 448"></path>
+<path d="M 642 500 L 760 508"></path>
+</g>
+
+<g fill="#3a3b41">
+<circle cx="410" cy="505" r="5"></circle>
+<circle cx="424" cy="522" r="5"></circle>
+<circle cx="404" cy="527" r="5"></circle>
+<circle cx="550" cy="505" r="5"></circle>
+<circle cx="536" cy="522" r="5"></circle>
+<circle cx="556" cy="527" r="5"></circle>
+</g>
+
+<ellipse cx="388" cy="392" rx="46" ry="52" fill="#8fc1ea" stroke="#0b0e14" stroke-width="10"></ellipse>
+<ellipse cx="572" cy="392" rx="46" ry="52" fill="#8fc1ea" stroke="#0b0e14" stroke-width="10"></ellipse>
+<ellipse cx="388" cy="394" rx="19" ry="34" fill="#0b0e14"></ellipse>
+<ellipse cx="572" cy="394" rx="19" ry="34" fill="#0b0e14"></ellipse>
+<circle cx="374" cy="372" r="11" fill="#f2efe6"></circle>
+<circle cx="558" cy="372" r="11" fill="#f2efe6"></circle>
+
+<path d="M 462 462 L 498 462 L 480 484 Z" fill="#d08b7c" stroke="#0b0e14" stroke-width="7" stroke-linejoin="round"></path>
+<path d="M 480 490 L 480 504" fill="none" stroke="#0b0e14" stroke-width="8" stroke-linecap="round"></path>
+<ellipse cx="480" cy="532" rx="36" ry="32" fill="#0b0e14"></ellipse>
+<ellipse cx="480" cy="546" rx="21" ry="12" fill="#d08b7c"></ellipse>
+
+<path d="M 480 636 L 606 676 L 606 790 C 606 880 540 930 480 960 C 420 930 354 880 354 790 L 354 676 Z" fill="#0b0e14" stroke="#0b0e14" stroke-width="34" stroke-linejoin="round"></path>
+<path d="M 480 636 L 606 676 L 606 790 C 606 880 540 930 480 960 C 420 930 354 880 354 790 L 354 676 Z" fill="#8fe388" stroke="#8fe388" stroke-width="10" stroke-linejoin="round"></path>
+<path d="M 428 806 L 466 846 L 536 758" fill="none" stroke="#0b0e14" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"></path>
+
+<ellipse cx="412" cy="668" rx="46" ry="34" fill="#e7e6e3" stroke="#0b0e14" stroke-width="9"></ellipse>
+<ellipse cx="548" cy="668" rx="46" ry="34" fill="#e7e6e3" stroke="#0b0e14" stroke-width="9"></ellipse>
+<g fill="none" stroke="#0b0e14" stroke-width="6" stroke-linecap="round">
+<path d="M 398 664 L 398 686"></path>
+<path d="M 426 664 L 426 686"></path>
+<path d="M 534 664 L 534 686"></path>
+<path d="M 562 664 L 562 686"></path>
+</g>
+
+<g transform="rotate(-8 856 345)" fill="#ff5c57">
+<rect x="790" y="296" width="132" height="38" rx="19"></rect>
+<rect x="790" y="356" width="132" height="38" rx="19"></rect>
+</g>
+
+</g>
+</svg>

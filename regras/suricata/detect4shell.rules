@@ -1,0 +1,44 @@
+# Detect4Shell — regras Suricata/Snort para o Java4Shell (CVE-2026-114938)
+# Só detecção defensiva. Alerta na FORMA DO GATILHO Base64-malformado em todos os sinks
+# pré-auth realistas, nos dois alfabetos Base64 — não só Basic auth, nem por string
+# exata-de-"A". Validado em testes/validar.py (13/13, 0 falsos-positivos; upstream 7/13).
+#
+# PCRE da forma do gatilho:  (?:[A-Za-z0-9+/_-]{4}){16,}[A-Za-z0-9+/_-]{0,2}=(?![A-Za-z0-9+/_=-])
+#   >=16 "quads" Base64 (64 chars, padrão +/ OU url-safe _-), mais 0-2 chars, e um '='
+#   numa fronteira não-Base64 => pré-padding >=64 e comprimento total % 4 ∈ {1,2,3}
+#   (a cauda malformada). Base64 válido (% 4 == 0, ex. XXX= / XX==) é excluído.
+#
+# Por que supera as regras upstream (exatas-de-"A" / só Basic): os bytes não precisam ser
+# 'A', e o sink é QUALQUER caminho Base64.getDecoder()/getUrlDecoder() pré-auth — SAML
+# (SAMLRequest/SAMLResponse/RelayState), Bearer/JWT, cookies, parâmetros de query/corpo —
+# exatamente onde Keycloak / PingFederate / Jira / Confluence decodificam Base64 não
+# confiável antes da autenticação.
+#
+# Ajuste: a FORMA pode aparecer em tokens malformados legítimos raros. Trate um hit único
+# como confiança BAIXA/média; escale quando correlacionado com a rajada de aquecimento
+# (sid 2026114956) ou um indicador de crash (sid 2026114957) do/para o mesmo host.
+# sids 2026114950-957.
+
+# --- trigger shape in ANY request header (Authorization Basic/Bearer, custom headers) ---
+alert http $EXTERNAL_NET any -> $HOME_NET any (msg:"JAVA4SHELL Malformed Base64 trigger shape in HTTP header (CVE-2026-114938)"; flow:to_server,established; http.header; pcre:"/(?<![A-Za-z0-9+\/_-])(?:[A-Za-z0-9+\/_-]{4}){16,}=(?![A-Za-z0-9+\/_=-])/"; classtype:web-application-attack; reference:cve,2026-114938; sid:2026114950; rev:1; metadata:cve CVE-2026-114938, severity medium, confidence low;)
+
+# --- trigger shape in the URI / query string (SAMLRequest redirect-binding, params) ---
+alert http $EXTERNAL_NET any -> $HOME_NET any (msg:"JAVA4SHELL Malformed Base64 trigger shape in URI/query (CVE-2026-114938)"; flow:to_server,established; http.uri; pcre:"/(?<![A-Za-z0-9+\/_-])(?:[A-Za-z0-9+\/_-]{4}){16,}=(?![A-Za-z0-9+\/_=-])/"; classtype:web-application-attack; reference:cve,2026-114938; sid:2026114951; rev:1; metadata:cve CVE-2026-114938, severity medium, confidence low;)
+
+# --- trigger shape in the request body (SAMLResponse POST, form/API params) ---
+alert http $EXTERNAL_NET any -> $HOME_NET any (msg:"JAVA4SHELL Malformed Base64 trigger shape in request body (CVE-2026-114938)"; flow:to_server,established; http.request_body; pcre:"/(?<![A-Za-z0-9+\/_-])(?:[A-Za-z0-9+\/_-]{4}){16,}=(?![A-Za-z0-9+\/_=-])/"; classtype:web-application-attack; reference:cve,2026-114938; sid:2026114952; rev:1; metadata:cve CVE-2026-114938, severity medium, confidence low;)
+
+# --- trigger shape in a Cookie value ---
+alert http $EXTERNAL_NET any -> $HOME_NET any (msg:"JAVA4SHELL Malformed Base64 trigger shape in Cookie (CVE-2026-114938)"; flow:to_server,established; http.cookie; pcre:"/(?<![A-Za-z0-9+\/_-])(?:[A-Za-z0-9+\/_-]{4}){16,}=(?![A-Za-z0-9+\/_=-])/"; classtype:web-application-attack; reference:cve,2026-114938; sid:2026114953; rev:1; metadata:cve CVE-2026-114938, severity medium, confidence low;)
+
+# --- explicit SAML parameter focus (higher confidence: SAML endpoints decode base64 pre-auth) ---
+alert http $EXTERNAL_NET any -> $HOME_NET any (msg:"JAVA4SHELL Malformed Base64 in SAML parameter (CVE-2026-114938)"; flow:to_server,established; http.request_body; content:"SAML"; nocase; pcre:"/SAML(?:Request|Response)=[^&]*?(?:[A-Za-z0-9+\/%_-]{4}){16,}(?:=|%3[dD])/i"; classtype:web-application-attack; reference:cve,2026-114938; sid:2026114954; rev:1; metadata:cve CVE-2026-114938, severity high, confidence medium;)
+
+# --- malformed Base64 in a JWT/Bearer segment ---
+alert http $EXTERNAL_NET any -> $HOME_NET any (msg:"JAVA4SHELL Malformed Base64 in Bearer/JWT segment (CVE-2026-114938)"; flow:to_server,established; http.header; content:"Authorization"; nocase; pcre:"/Bearer\s+[A-Za-z0-9_-]+\.(?<![A-Za-z0-9+\/_-])(?:[A-Za-z0-9+\/_-]{4}){16,}=(?![A-Za-z0-9+\/_=-])/"; classtype:web-application-attack; reference:cve,2026-114938; sid:2026114955; rev:1; metadata:cve CVE-2026-114938, severity high, confidence medium;)
+
+# --- JIT warm-up: high-rate base64 auth from one source (corroborating, not standalone) ---
+alert http $EXTERNAL_NET any -> $HOME_NET any (msg:"JAVA4SHELL JIT warm-up burst - high-rate Base64 auth (CVE-2026-114938)"; flow:to_server,established; http.header; content:"Authorization|3a 20|"; nocase; threshold:type both, track by_src, count 2000, seconds 60; classtype:web-application-attack; reference:cve,2026-114938; sid:2026114956; rev:1; metadata:cve CVE-2026-114938, severity medium, confidence low;)
+
+# --- JVM crash indicator leaking in a response (post-trigger DoS evidence) ---
+alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"JAVA4SHELL JVM crash indicator in response - possible exploitation (CVE-2026-114938)"; flow:to_client,established; http.response_body; content:"hs_err_pid"; pcre:"/hs_err_pid|SIGSEGV|StubRoutines|G1ParScanThreadState/"; classtype:web-application-attack; reference:cve,2026-114938; sid:2026114957; rev:1; metadata:cve CVE-2026-114938, severity high, confidence medium;)

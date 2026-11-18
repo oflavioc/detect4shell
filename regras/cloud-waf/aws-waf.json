@@ -1,0 +1,45 @@
+{
+  "_comment": "Detect4Shell — AWS WAFv2 rule para Java4Shell (CVE-2026-114938). Defensivo.",
+  "_howto": [
+    "AWS WAF usa regex RE2 (sem lookbehind/lookahead), então ancoramos com classes de fronteira.",
+    "Aplique a transformação URL_DECODE para capturar '=' percent-encoded (%3D) em query/body.",
+    "Comece com Action=Count (só registra); troque para Block após ajustar ao seu tráfego.",
+    "Replique a Statement para QUERY_STRING e BODY além do header Authorization.",
+    "Insira este objeto em Rules[] da sua WebACL e ajuste Priority."
+  ],
+  "Name": "Detect4Shell-MalformedBase64",
+  "Priority": 20,
+  "Action": { "Count": {} },
+  "VisibilityConfig": {
+    "SampledRequestsEnabled": true,
+    "CloudWatchMetricsEnabled": true,
+    "MetricName": "Detect4ShellMalformedBase64"
+  },
+  "Statement": {
+    "OrStatement": {
+      "Statements": [
+        {
+          "RegexMatchStatement": {
+            "RegexString": "(^|[^A-Za-z0-9+/_-])[A-Za-z0-9+/_-]{64,}=([^A-Za-z0-9+/_=-]|$)",
+            "FieldToMatch": { "SingleHeader": { "Name": "authorization" } },
+            "TextTransformations": [ { "Priority": 0, "Type": "NONE" } ]
+          }
+        },
+        {
+          "RegexMatchStatement": {
+            "RegexString": "(^|[^A-Za-z0-9+/_-])[A-Za-z0-9+/_-]{64,}=([^A-Za-z0-9+/_=-]|$)",
+            "FieldToMatch": { "QueryString": {} },
+            "TextTransformations": [ { "Priority": 0, "Type": "URL_DECODE" } ]
+          }
+        },
+        {
+          "RegexMatchStatement": {
+            "RegexString": "(^|[^A-Za-z0-9+/_-])[A-Za-z0-9+/_-]{64,}=([^A-Za-z0-9+/_=-]|$)",
+            "FieldToMatch": { "Body": { "OversizeHandling": "CONTINUE" } },
+            "TextTransformations": [ { "Priority": 0, "Type": "URL_DECODE" } ]
+          }
+        }
+      ]
+    }
+  }
+}
