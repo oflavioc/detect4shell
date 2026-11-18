@@ -24,7 +24,7 @@ Ação: gerar evento **High**, notificar. Opcional: `group by srcip` com limiar 
 ### B) Event Handler independente do FortiWeb (forma do gatilho na URL/corpo)
 Se você tiver o `http_url` / request nos logs (proxy, FortiGate UTM, FortiWeb traffic log):
 ```
-(http_url =~ "(?:(?:[A-Za-z0-9+/]{4}){16,}|(?:[A-Za-z0-9_-]{4}){16,})={1,2}([^A-Za-z0-9+/_=-]|$)")
+(http_url =~ "(^|[^A-Za-z0-9+/_-])(?:(?:[A-Za-z0-9+/]{4}){16,}|(?:[A-Za-z0-9_-]{4}){16,})={1,2}([^A-Za-z0-9+/_=-]|$)")
 ```
 > O motor de regex do filtro FAZ (Lucene-like) não tem lookbehind → usamos fronteira à direita
 > (levemente mais amplo; ok para detecção).
@@ -45,7 +45,7 @@ Agende como relatório diário durante a janela de resposta.
 
 ### Rule 1 — Forma do gatilho na rede (FortiWeb/proxy)
 **SubPattern** `J4S_Net`:
-- **Filter:** `(eventType CONTAIN "WAF" OR eventType CONTAIN "HTTP") AND (httpUrl REGEXP "(?:(?:[A-Za-z0-9+/]{4}){16,}|(?:[A-Za-z0-9_-]{4}){16,})={1,2}([^A-Za-z0-9+/_=-]|$)" OR rawEventMsg REGEXP "Authorization: Basic (?:[A-Za-z0-9+/]{64,}|[A-Za-z0-9_-]{64,})={1,2}")`
+- **Filter:** `(eventType CONTAIN "WAF" OR eventType CONTAIN "HTTP") AND (httpUrl REGEXP "(^|[^A-Za-z0-9+/_-])(?:(?:[A-Za-z0-9+/]{4}){16,}|(?:[A-Za-z0-9_-]{4}){16,})={1,2}([^A-Za-z0-9+/_=-]|$)" OR rawEventMsg REGEXP "Authorization: Basic (?:(?:[A-Za-z0-9+/]{4}){16,}|(?:[A-Za-z0-9_-]{4}){16,})={1,2}([^A-Za-z0-9+/_=-]|$)")`
 - **Group By:** `srcIpAddr` · **Aggregate:** `COUNT(*) >= 1`
 - **Incident:** "Java4Shell malformed-Base64 trigger seen (CVE-2026-114938)", severity High.
 

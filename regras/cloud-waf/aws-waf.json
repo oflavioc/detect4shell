@@ -20,21 +20,21 @@
       "Statements": [
         {
           "RegexMatchStatement": {
-            "RegexString": "(^|[^A-Za-z0-9+/_-])(?:[A-Za-z0-9+/]{64,}|[A-Za-z0-9_-]{64,})={1,2}([^A-Za-z0-9+/_=-]|$)",
+            "RegexString": "(^|[^A-Za-z0-9+/_-])(?:(?:[A-Za-z0-9+/]{4}){16,}|(?:[A-Za-z0-9_-]{4}){16,})={1,2}([^A-Za-z0-9+/_=-]|$)",
             "FieldToMatch": { "SingleHeader": { "Name": "authorization" } },
             "TextTransformations": [ { "Priority": 0, "Type": "NONE" } ]
           }
         },
         {
           "RegexMatchStatement": {
-            "RegexString": "(^|[^A-Za-z0-9+/_-])(?:[A-Za-z0-9+/]{64,}|[A-Za-z0-9_-]{64,})={1,2}([^A-Za-z0-9+/_=-]|$)",
+            "RegexString": "(^|[^A-Za-z0-9+/_-])(?:(?:[A-Za-z0-9+/]{4}){16,}|(?:[A-Za-z0-9_-]{4}){16,})={1,2}([^A-Za-z0-9+/_=-]|$)",
             "FieldToMatch": { "QueryString": {} },
             "TextTransformations": [ { "Priority": 0, "Type": "URL_DECODE" } ]
           }
         },
         {
           "RegexMatchStatement": {
-            "RegexString": "(^|[^A-Za-z0-9+/_-])(?:[A-Za-z0-9+/]{64,}|[A-Za-z0-9_-]{64,})={1,2}([^A-Za-z0-9+/_=-]|$)",
+            "RegexString": "(^|[^A-Za-z0-9+/_-])(?:(?:[A-Za-z0-9+/]{4}){16,}|(?:[A-Za-z0-9_-]{4}){16,})={1,2}([^A-Za-z0-9+/_=-]|$)",
             "FieldToMatch": { "Body": { "OversizeHandling": "CONTINUE" } },
             "TextTransformations": [ { "Priority": 0, "Type": "URL_DECODE" } ]
           }

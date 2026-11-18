@@ -7,9 +7,9 @@ nos campos de URI automaticamente na maioria dos casos; para corpo, use a inspe�
 ## Expressão da regra (cole em Security → WAF → Custom rules)
 
 ```
-(any(http.request.headers["authorization"][*] matches "(^|[^A-Za-z0-9+/_-])(?:[A-Za-z0-9+/]{64,}|[A-Za-z0-9_-]{64,})={1,2}([^A-Za-z0-9+/_=-]|$)"))
-or (http.request.uri.query matches "(^|[^A-Za-z0-9+/_-])(?:[A-Za-z0-9+/]{64,}|[A-Za-z0-9_-]{64,})={1,2}([^A-Za-z0-9+/_=-]|$)")
-or (any(http.request.cookies[*] matches "(^|[^A-Za-z0-9+/_-])(?:[A-Za-z0-9+/]{64,}|[A-Za-z0-9_-]{64,})={1,2}([^A-Za-z0-9+/_=-]|$)"))
+(any(http.request.headers["authorization"][*] matches "(^|[^A-Za-z0-9+/_-])(?:(?:[A-Za-z0-9+/]{4}){16,}|(?:[A-Za-z0-9_-]{4}){16,})={1,2}([^A-Za-z0-9+/_=-]|$)"))
+or (http.request.uri.query matches "(^|[^A-Za-z0-9+/_-])(?:(?:[A-Za-z0-9+/]{4}){16,}|(?:[A-Za-z0-9_-]{4}){16,})={1,2}([^A-Za-z0-9+/_=-]|$)")
+or (any(http.request.cookies[*] matches "(^|[^A-Za-z0-9+/_-])(?:(?:[A-Za-z0-9+/]{4}){16,}|(?:[A-Za-z0-9_-]{4}){16,})={1,2}([^A-Za-z0-9+/_=-]|$)"))
 ```
 
 ## Ação

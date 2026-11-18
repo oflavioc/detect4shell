@@ -61,7 +61,7 @@ FROM logs-java-*
 **3) Rede — forma do gatilho via regexp (Query DSL; aplique ao campo do header/uri):**
 ```json
 { "query": { "regexp": {
-  "http.request.headers.authorization": "(?:(?:[A-Za-z0-9+/]{4}){16,}|(?:[A-Za-z0-9_-]{4}){16,})={1,2}([^A-Za-z0-9+/_=-]|$)"
+  "http.request.headers.authorization": "(^|[^A-Za-z0-9+/_-])(?:(?:[A-Za-z0-9+/]{4}){16,}|(?:[A-Za-z0-9_-]{4}){16,})={1,2}([^A-Za-z0-9+/_=-]|$)"
 } } }
 ```
 > `regexp` do Elasticsearch (Lucene) não suporta lookbehind — usamos a classe de fronteira à direita;
