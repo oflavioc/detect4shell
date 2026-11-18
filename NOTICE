@@ -40,7 +40,8 @@ SOFTWARE.
 Contribuições originais do Detect4Shell
 ---------------------------------------
 A lógica de detecção generalizada (deteccao/, regras/ para Suricata/Sigma/ModSecurity/YARA/
-nginx/WAF de nuvem/SIEM), o scanner passivo de exposição, a suíte de validação, e toda a
+nginx/WAF de nuvem/FortiWeb/FortiGate IPS/FortiSIEM-FortiAnalyzer/SIEM), o scanner passivo de
+exposição, a suíte de validação, e toda a
 documentação em português são contribuições originais deste projeto, licenciadas sob MIT.
 
 Crédito de pesquisa da vulnerabilidade
