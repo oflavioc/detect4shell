@@ -207,6 +207,17 @@ forma ao JVM (divulgado abertamente — pedido pelos revisores):
 - [`demo/`](demo/) — **ataque vs. defesa ao vivo**: alvo Java vulnerável + edge nginx (regra do repo) que bloqueia na borda; passo a passo com os resultados reais.
 - [`mitigacao/`](mitigacao/) — **mitigação na aplicação**: Servlet Filter (dentro da JVM, fecha a evasão `%3D`) + wiring (web.xml / Spring Boot).
 
+## Testes & CI
+
+`bash test.sh` roda o gate de regressão completo localmente (requer Docker + python3). O CI roda o mesmo em todo push/PR e **bloqueia** em caso de falha. Tiers, em ordem (para no primeiro que falhar):
+
+1. `testes/validar.py` — teste unitário canônico de FN + FP (Python puro, sem Docker).
+2. `testes/per-engine/run.sh` — matriz por engine: as 43 regexes nos motores reais.
+3. `testes/per-engine/load_check.sh` — as regras enviadas **carregam** no engine real (YARA/nginx/Suricata).
+4. `testes/fp-replay/run.sh` — replay de ~108k strings benignas, 0 falsos positivos.
+
+`laboratorio/matrix/run_matrix.sh` (imagens JDK externas que mudam com o tempo) é validação periódica, fora do gate bloqueante (`RUN_MATRIX=1 bash test.sh` roda só como aviso).
+
 ## Créditos e licença
 
 - **Pesquisa:** Qi Deng / Quang Luong & Jenish Rakholiya (Calif.io). Aviso OpenJDK/Oracle 2026-11-17.

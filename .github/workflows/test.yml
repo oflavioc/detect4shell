@@ -1,0 +1,12 @@
+name: test
+on:
+  push:
+  pull_request:
+jobs:
+  regression-gate:
+    name: Detect4Shell regression gate (test.sh)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run gate
+        run: bash test.sh
