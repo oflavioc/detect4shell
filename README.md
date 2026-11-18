@@ -12,7 +12,7 @@ tentativas e **prevenir** na borda — com instruções simples, passo a passo.
 
 > **🐣 Nunca ouviu falar? Comece aqui:** [**docs/EXPLICACAO-SIMPLES.md**](docs/EXPLICACAO-SIMPLES.md) —
 > o ataque explicado como para alguém de 10 anos (o que é, como funciona, implicações, e onde achar na
-> sua organização). 5 minutos.
+> sua organização). 5 minutos. **É hype ou é real? Estou vulnerável?** → [**docs/FAQ.md**](docs/FAQ.md).
 
 > **Aviso de escopo.** Projeto **só defensivo**. Sem exploit, sem cadeia weaponizada
 > (writer/reader/JavaBleed/RCE), sem ferramenta que dispare o gatilho de corrupção de memória contra um
@@ -191,6 +191,7 @@ forma ao JVM (divulgado abertamente — pedido pelos revisores):
 ## Mapa do repositório
 
 - [`docs/EXPLICACAO-SIMPLES.md`](docs/EXPLICACAO-SIMPLES.md) — o ataque para leigos (comece aqui).
+- [`docs/FAQ.md`](docs/FAQ.md) — **perguntas frequentes** (é hype? estou vulnerável? o WAF bloqueou = era explorável?).
 - [`docs/ANALISE.md`](docs/ANALISE.md) — análise técnica resumida (mecânica + versões).
 - [`docs/FORTINET-FABRIC.md`](docs/FORTINET-FABRIC.md) — como o Fortinet Fabric cobre, por função.
 - [`docs/ARTE-PROMPTS.md`](docs/ARTE-PROMPTS.md) — kit de prompts de arte + style guide da identidade visual (`docs/banner.png` é a social-preview exportada daí).
