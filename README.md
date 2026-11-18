@@ -43,17 +43,26 @@ Talos, VulnCheck, Wiz, Aikido, The Hacker News) — que em geral **ecoam o advis
 confirmações independentes. Consenso:
 
 - ✅ **Reproduzido por nós (lab confinado):** escrita **OOB de 62 bytes** (`changed=62 first=50 last=111`),
-  consistente com o sintoma do descobridor. **Reportado pelas fontes** (não demonstrado por nós em
-  produção): **crash (DoS)** + **leak local de heap ("JavaBleed")**.
-- ⚠️ **Alegado, não reproduzido publicamente:** **RCE**. O próprio descobridor publica que o padrão do
-  overflow é **fixo** (não controlado) e que o caminho ingênuo de exploração **falha**; os labs
-  independentes só chegaram a **crash + leak**. A cadeia funcional é **retida**. Amazon e OpenJDK pontuam
-  como difícil (CVSS 8.1, AC:H).
+  consistente com o sintoma do descobridor. ⚠️ O **disparo** é **heap-dependente** (100% no padrão fixo do
+  reprodutor, ~0% com arrays frescos — precisa de bytes Base64 válidos logo após o buffer de decode), por
+  isso o crash é **probabilístico** e uma exploração confiável exige *heap grooming*. **Reportado pelas
+  fontes** (não demonstrado por nós): **crash (DoS)** + **leak local de heap ("JavaBleed")**.
+- ⚠️ **RCE genérico: alegado, não reproduzido publicamente contra produtos stock.** O descobridor publica
+  que o padrão do overflow é **fixo** e que o caminho ingênuo **falha** (consistente com o disparo
+  heap-dependente acima — por isso precisa de *grooming*); os labs independentes só chegaram a **crash +
+  leak**. ❗ **Um pesquisador (Maycon Vitali, cadeia assistida por GLM) demonstrou publicamente um ataque
+  DATA-ONLY** num **alvo-demo próprio**: R/W no heap → flip de `admin`/sessão → "root". Isso **corrobora a
+  exploitabilidade data-only num alvo controlado** (com container rodando como root + feature admin de
+  exec), **não** um RCE nativo não-autenticado genérico. A detecção aqui pega o **mesmo gatilho**
+  (`A×64+"="`). Amazon/OpenJDK pontuam como difícil (CVSS 8.1, AC:H).
 - 🚫 **Sem exploração in-the-wild; não está na CISA KEV** (em 2026-11-18).
 
 **Resumo honesto:** hoje o risco real é **tirar o sistema do ar** (e talvez **vazar dado**). "Hacker
-assume tudo" é possibilidade teórica, não realidade demonstrada. **Corrija assim mesmo** — derrubar um
-sistema crítico já é grave.
+assume tudo" é possibilidade teórica, não realidade demonstrada. ⚠️ **Antes de entrar em pânico:** o bug
+exige **x86-64 com AVX-512 VBMI** (Ice Lake+ / Zen 4+) — **ARM/Graviton e Xeon Skylake/Cascade Lake são
+imunes**, então boa parte das frotas nem está no caminho. E lembre: **banner ≠ match de regra ≠ bug** são
+três coisas diferentes (um WAF bloquear não prova que o host era explorável; não bloquear não prova que era
+seguro). **Corrija assim mesmo** — derrubar um sistema crítico já é grave.
 
 ## Validação em laboratório (o que realmente foi executado)
 
@@ -176,7 +185,8 @@ forma ao JVM (divulgado abertamente — pedido pelos revisores):
 3. **Não** use `-XX:DisableIntrinsic=_base64_decodeBlock` sozinho (a JVM não inicia).
 4. **Defense-in-depth na borda/aplicação** (enquanto não corrige): regra de WAF/proxy em
    [`regras/`](regras/) e o **Servlet Filter** em [`mitigacao/`](mitigacao/) — este último roda dentro
-   da JVM e é **imune à evasão parser-differential** de rede (`%3D`, `=`, `&#61;`).
+   da JVM: **fecha a evasão `%3D`** (o container URL-decodifica query/form), mas **não** decodifica
+   `&#61;`/`=` de corpos XML/JSON — esses chegam ao parser downstream (use a flag de JVM p/ eles).
 
 ## Mapa do repositório
 
@@ -189,7 +199,7 @@ forma ao JVM (divulgado abertamente — pedido pelos revisores):
 - [`scanner/`](scanner/) — verificador **passivo** de exposição (1 GET benigno por endpoint).
 - [`laboratorio/`](laboratorio/) — reprodução confinada + `verificar_patch.sh`.
 - [`demo/`](demo/) — **ataque vs. defesa ao vivo**: alvo Java vulnerável + edge nginx (regra do repo) que bloqueia na borda; passo a passo com os resultados reais.
-- [`mitigacao/`](mitigacao/) — **mitigação na aplicação**: Servlet Filter (dentro da JVM, imune à evasão de rede) + wiring (web.xml / Spring Boot).
+- [`mitigacao/`](mitigacao/) — **mitigação na aplicação**: Servlet Filter (dentro da JVM, fecha a evasão `%3D`) + wiring (web.xml / Spring Boot).
 
 ## Créditos e licença
 

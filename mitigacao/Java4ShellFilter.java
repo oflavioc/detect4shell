@@ -17,11 +17,12 @@ import java.util.regex.Pattern;
 /**
  * Detect4Shell — Servlet Filter defensivo contra o Java4Shell (CVE-2026-114938).
  *
- * <p>Roda DENTRO da JVM, depois do TLS e do parser do container, então inspeciona os valores
- * já decodificados pelo container. Isso o torna imune à evasão parser-differential de rede
- * ({@code %3D}, {@code \\u003d} em JSON, {@code &#61;} em XML/SAML) que engana regras de borda
- * que operam PRÉ-normalização. Rejeita (HTTP 400) qualquer header, parâmetro (query/form) ou
- * cookie cujo valor casa a FORMA do gatilho Base64-malformado — ANTES de a aplicação chamar
+ * <p>Roda DENTRO da JVM, depois do TLS e do parser do container. Vê os parâmetros query/form
+ * já URL-decodificados, então FECHA a evasão {@code %3D} que passa por regras de borda PRÉ-
+ * normalização. ⚠️ NÃO decodifica entidades XML/SAML ({@code &#61;}) nem escapes JSON
+ * ({@code \\u003d}) — esses só são resolvidos downstream (Jackson / parser XML), depois do filtro;
+ * para eles use a flag de JVM ou o patch. Rejeita (HTTP 400) qualquer header, parâmetro (query/form)
+ * ou cookie cujo valor casa a FORMA do gatilho Base64-malformado — ANTES de a aplicação chamar
  * {@code Base64.getDecoder().decode(...)}.
  *
  * <p><b>Não substitui atualizar o JDK</b> (o controle definitivo — ver README §Mitigação).

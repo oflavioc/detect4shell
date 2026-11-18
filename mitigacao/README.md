@@ -11,12 +11,14 @@ no boundary da aplicação") para quem ainda não corrigiu o JDK.
 |---|---|---|---|
 | 1 | **Atualizar o JDK** (builds `.1`) | runtime | **O controle definitivo.** Ver [README §Mitigação](../README.md#mitigação-para-reportar-a-donos-de-ativos). |
 | 2 | **Flag de JVM** `-XX:-UseBASE64Intrinsics` | runtime | Zero código, desliga só o intrínseco vulnerável. Validada (product/default). |
-| 3 | **Servlet Filter** (este diretório) | aplicação | Dentro da JVM, **imune à evasão de rede**. Defense-in-depth. |
+| 3 | **Servlet Filter** (este diretório) | aplicação | Dentro da JVM, **fecha a evasão `%3D`** (params); não vê `&#61;`/`=` de corpos. Defense-in-depth. |
 | 4 | **Regra de borda (WAF/proxy)** | rede | [`../regras/`](../regras/) — FortiWeb, ModSecurity, nginx, AWS/Cloudflare. Pré-normalização. |
 
 > Por que o filtro (camada 3) e não só a regra de borda (camada 4)? O filtro roda **depois do parser
-> do container**, então vê o valor **já decodificado** — é **imune** à evasão parser-differential
-> (`%3D`, `=` em JSON, `&#61;` em XML/SAML) que passa por regras de rede pré-normalização.
+> do container**, então vê os **params já URL-decodificados** → **fecha a evasão `%3D`** que passa por
+> regras de rede pré-normalização. ⚠️ Mas ele **não** decodifica entidades XML/SAML (`&#61;`) nem escapes
+> JSON (`=`) — esses só são resolvidos **downstream** (Jackson / parser XML), *depois* do filtro;
+> para eles o controle é a **flag de JVM** (camada 2) ou o patch. Não é "imune a tudo".
 
 ## O Servlet Filter — [`Java4ShellFilter.java`](Java4ShellFilter.java)
 

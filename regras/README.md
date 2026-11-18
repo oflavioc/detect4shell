@@ -43,6 +43,11 @@ amplo (pega 64 e 128). O `{16,}+` é **possessivo** (anti-ReDoS). Variante low-F
 | [`siem/splunk-elastic.md`](siem/splunk-elastic.md) | Splunk / Elastic | ✅ | — | host (exceções/crash) + rede |
 | [`siem/fortisiem-fortianalyzer.md`](siem/fortisiem-fortianalyzer.md) | **FortiSIEM / FortiAnalyzer** | ✅ | — | event handlers + rules + correlação |
 
+> **Status de validação (honesto):** a forma foi validada em `testes/validar.py` (16/16, 0 FP no
+> conjunto curado) e **testada ao vivo apenas no nginx** (demo: bloqueia `=` **e** `==`). Os outros
+> engines são **ports da mesma forma canônica** — valide cada um no seu ambiente (sintaxe, buffers e
+> ponto de inspeção variam por produto; ex.: YARA/RE2 não têm lookbehind, FortiOS pode rejeitar possessivo).
+
 ## Prevenir vs. detectar
 - **Prevenir (bloquear na borda):** ModSecurity, nginx, FortiWeb, FortiGate IPS, AWS/Cloudflare WAF. Um token Base64
   malformado nunca é exigido por cliente correto, então bloquear costuma ser seguro — mas **comece em

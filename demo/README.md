@@ -34,10 +34,12 @@ LOG DO ALVO: só 1 escrita OOB (a da Fase 1). O gatilho da Fase 2 NÃO gerou OOB
 ```
 
 ## Dois fatos honestos sobre o demo
-- **O primitivo (escrita OOB de 62 bytes) é determinístico**; o **crash de processo (DoS) é
-  probabilístico** — a escrita quase sempre cai em *slack* de TLAB (heap ainda não usado) e não
-  derruba na hora. Por isso o demo prova a **violação de memória** (`oob_write=62`), não um crash
-  que pode não acontecer na hora da demonstração.
+- **A escrita OOB de 62 bytes é HEAP-DEPENDENTE, não determinística:** mesmo input, o reprodutor
+  oficial estoura 100% (padrão de alocação fixo) mas um loop com arrays frescos ~0% — ela só dispara
+  quando há bytes Base64 válidos logo **após** o buffer de decode. O **crash (DoS)** é, portanto,
+  **probabilístico** (a escrita cai em *slack* de TLAB) e uma exploração confiável exige *heap grooming*.
+  Este demo usa o padrão do reprodutor, então o `oob_write=62` dispara de forma estável — mas é sinal
+  **de lab**, não garantia nem IoC de produção.
 - **Precondição de hardware:** o OOB só dispara em CPU **x86-64 com AVX-512 VBMI** (Intel Ice Lake+ /
   AMD Zen 4+) rodando **OpenJDK 17.0.6+ / 21 / 25 / 27** não corrigido. ARM e CPUs sem VBMI são imunes.
 - **Sinal sintético, NÃO um IoC:** `oob_write=62` e o `HTTP 500` são instrumentação **deste alvo de

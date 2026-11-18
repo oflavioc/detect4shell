@@ -20,6 +20,12 @@ bytes finais) com aritmética de tamanho que pode ficar **negativa**:
 6. Buffer de 50 bytes, escrita começa no offset 48 → offsets 48–111 → **62 bytes além do fim**.
 7. A `IllegalArgumentException` é lançada **depois** da escrita — o dano já ocorreu.
 
+> ⚠️ **Determinismo:** o disparo da escrita OOB é **heap-dependente** — a escrita de 62 bytes só se
+> completa quando a memória logo **após** o buffer de decode contém bytes Base64 válidos. No padrão
+> fixo do reprodutor isso ocorre 100%; com arrays frescos, ~0% (lab, temurin 21.0.13.0.2). É por isso
+> que o crash é **probabilístico** e que um exploit confiável faz *heap grooming*. Também em lab:
+> `A×64+"=="` (dois pads) dispara **igual** a `A×64+"="`; sem-`=` e corpo não-alinhado **não**.
+
 ## Pré-condições (todas necessárias)
 
 | Condição | Requisito |
@@ -59,7 +65,9 @@ Red Hat / Temurin / Microsoft / Liberica estavam sem correção em 2026-11-18.
 
 ## Produtos em risco (sinks pré-auth que decodificam Base64)
 
-Sem autenticação por padrão: **Keycloak, Jira, Confluence, JFrog Artifactory, Jenkins, PingFederate**.
+Sem autenticação por padrão: **Keycloak, Jira, Confluence, JFrog Artifactory, Jenkins, PingFederate** —
+produtos com **caminhos de decode Base64 pré-auth**; **em risco apenas SE** rodando JDK não corrigido em
+CPU VBMI. Não confirmamos a vulnerabilidade produto-a-produto (sink exato / versão) — trate como candidatos.
 Com autenticação: Kafka, Solr, Elasticsearch, Gerrit, Spinnaker. Também há uma variante cliente-TLS
 (programa Java que conecta a servidor malicioso). A exposição é de **runtime + CPU**, não de classpath
 — por isso scanners de dependência e SAST não enxergam.
