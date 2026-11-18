@@ -4,7 +4,8 @@
 #
 # Construir:  docker build -t detect4shell-lab .
 # Rodar:      docker run --rm --network none detect4shell-lab
-# Mitigação:  docker run --rm --network none detect4shell-lab java -XX:-UseBASE64Intrinsics Base64Trigger
+# Mitigação:  docker run --rm --network none detect4shell-lab -XX:-UseBASE64Intrinsics Base64Trigger
+#   (ENTRYPOINT já é `java`; os args vão DEPOIS dele — não repita o `java`.)
 #
 # Observação: a imagem eclipse-temurin:21-jdk-noble estava, na divulgação, em 21.0.13
 # (ainda vulnerável). Para testar o lado corrigido, troque por um build .1 (ex. Corretto

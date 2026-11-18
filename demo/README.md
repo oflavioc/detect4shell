@@ -16,6 +16,8 @@ usando a regra nginx **do próprio repo** ([`../regras/nginx/detect4shell.conf`]
 FASE 1 — SEM DEFESA (direto no alvo :18080)
   benigno                 -> HTTP 200 | OK user=admin
   GATILHO (Authorization) -> HTTP 500 | MEMORY-CORRUPTION cve-2026-114938 oob_write=62 bytes
+  GATILHO (query SAML)    -> HTTP 200 | OK user=anon   (este alvo só modela o sink Authorization;
+                                                        a query só é barrada pela borda nginx na FASE 2)
 
 FASE 2 — COM DEFESA (edge nginx Detect4Shell :8088)
   benigno                 -> HTTP 200 | OK user=admin
@@ -38,9 +40,19 @@ LOG DO ALVO: só 1 escrita OOB (a da Fase 1). O gatilho da Fase 2 NÃO gerou OOB
   que pode não acontecer na hora da demonstração.
 - **Precondição de hardware:** o OOB só dispara em CPU **x86-64 com AVX-512 VBMI** (Intel Ice Lake+ /
   AMD Zen 4+) rodando **OpenJDK 17.0.6+ / 21 / 25 / 27** não corrigido. ARM e CPUs sem VBMI são imunes.
+- **Sinal sintético, NÃO um IoC:** `oob_write=62` e o `HTTP 500` são instrumentação **deste alvo de
+  lab** para provar o primitivo — não são indicadores de produção. Um WAF/filtro que bloqueia não prova
+  que o host era explorável; um que não bloqueia não prova que era seguro. Banner, match de regra e o bug
+  do intrínseco são **três coisas diferentes**.
 
 ## Pré-requisitos
-- JDK 17/21/25/27 **não corrigido** (`javac`/`java` no PATH). Confira a CPU: `laboratorio/verificar_patch.sh`.
+- JDK **21/25/27 não corrigido** (`javac`/`java` no PATH). ⚠️ Este demo usa o gatilho de **64 chars**
+  (`A×64+"="`), que dispara em 21/25/27. **Em JDK 17 o gatilho é `A×128+"="`** — contra um alvo rodando
+  JDK 17, o payload de 64 chars faz o alvo responder `400 "SEM escrita OOB"` num JVM **genuinamente
+  vulnerável** (falso-negativo); troque o payload para 128 chars.
+- CPU com **AVX-512 VBMI** (ver "Dois fatos honestos"). Checagem: `laboratorio/verificar_patch.sh` roda
+  só em **Linux/WSL** (lê `/proc/cpuinfo`); no Git-Bash do Windows ele imprime "PULADO". No Windows,
+  rode-o via WSL ou dentro do Docker lab (`laboratorio/Dockerfile`).
 - **Docker** (para o edge nginx). O container alcança o alvo via `host.docker.internal`.
 
 ## Passo a passo
@@ -51,7 +63,9 @@ cd demo/alvo
 javac VulnBasicAuthServer.java
 java VulnBasicAuthServer 0.0.0.0 18080      # 0.0.0.0 p/ o container nginx alcançar
 ```
-Espere a linha `[alvo] vulneravel ouvindo em 0.0.0.0:18080`.
+Espere a linha `[alvo] vulneravel ouvindo em 0.0.0.0:18080`. Esse processo **bloqueia o terminal** —
+**abra um segundo terminal** para rodar os ataques (os `./atacar.sh` saem sempre de `demo/`; os
+`java VulnBasicAuthServer` saem de `demo/alvo/`, onde está o `.class`).
 
 ### 2) FASE 1 — ataque SEM defesa (direto no alvo)
 ```bash
@@ -62,9 +76,13 @@ O gatilho retorna **HTTP 500 `oob_write=62 bytes`** e o alvo loga `!!! ESCRITA O
 **→ print:** terminal do ataque + terminal do alvo lado a lado.
 
 ### 3) (Opcional) mitigação por flag de JVM — zero código
-Derrube o alvo e suba com o intrínseco vulnerável desligado:
+Derrube o alvo (Ctrl-C no terminal do servidor) e suba com o intrínseco vulnerável desligado:
 ```bash
+# terminal do servidor (em demo/alvo)
 java -XX:-UseBASE64Intrinsics VulnBasicAuthServer 0.0.0.0 18080
+```
+```bash
+# terminal do ataque (em demo)
 ./atacar.sh http://127.0.0.1:18080/
 ```
 Agora o gatilho vira **HTTP 400 `SEM escrita OOB`** — a flag `-XX:-UseBASE64Intrinsics`

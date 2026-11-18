@@ -21,7 +21,7 @@ Os artefatos prontos deste repo estão marcados com 📦.
 | **FortiWeb** (WAF) | Custom signature dedicada; cobre SAML/JWT/cookie/url-safe. | **Alto** | 📦 `regras/fortiweb/` |
 | **FortiADC** | ADC/LB com WAF — mesma lógica de regra na frente das apps Java que ele balanceia. | Médio | (use a regex de `regras/README.md`) |
 | **FortiProxy** | Proxy reverso com inspeção IPS/WAF — aplica a mesma assinatura. | Médio | (idem) |
-| **FortiDDoS** | A exploração precisa de uma **rajada** (~28 mil requisições para "aquecer" o JIT) → detecta/mitiga como **flood** volumétrico/de aplicação; ataca o vetor de **DoS**. | Médio | — |
+| **FortiDDoS** | A exploração precisa de uma **rajada** (o JIT compila o intrínseco após **~200k decodificações** — ver `docs/ANALISE.md`; tipicamente dezenas/centenas de milhares de requisições) → detecta/mitiga como **flood** volumétrico/de aplicação; ataca o vetor de **DoS**. | Médio | — |
 
 ## 🚨 DETECTAR — ver tentativa e impacto
 | Solução | Como ajuda | Impacto | Artefato |

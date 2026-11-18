@@ -32,6 +32,7 @@ gatilhos documentados) e é robusta a builds; **super-casa** comprimentos malfor
 | [`modsecurity/detect4shell.conf`](modsecurity/detect4shell.conf) | ModSecurity v3 (WAF) | ✅ | ✅ (`deny`) | DETECTONLY por padrão; vire p/ `deny` após ajustar |
 | [`nginx/detect4shell.conf`](nginx/detect4shell.conf) | nginx (edge) | ✅ | ✅ (403) | `map` + `if return 403` |
 | [`fortiweb/detect4shell.md`](fortiweb/detect4shell.md) | **FortiWeb** (WAF) | ✅ | ✅ (alert_deny) | custom signature; CLI + GUI |
+| [`fortigate-ips/detect4shell.md`](fortigate-ips/detect4shell.md) | **FortiGate IPS** | ✅ | ✅ (drop inline) | custom F-SBID; exige SSL deep-inspection p/ HTTPS |
 | [`cloud-waf/aws-waf.json`](cloud-waf/aws-waf.json) | AWS WAFv2 | ✅ | ✅ (Block) | use `URL_DECODE` p/ `%3D` |
 | [`cloud-waf/cloudflare.md`](cloud-waf/cloudflare.md) | Cloudflare WAF | ✅ | ✅ (Block) | expressão custom-rule |
 | [`yara/detect4shell.yar`](yara/detect4shell.yar) | YARA | ✅ (arquivos) | — | crash-dump forense + payload capturado |
@@ -39,7 +40,7 @@ gatilhos documentados) e é robusta a builds; **super-casa** comprimentos malfor
 | [`siem/fortisiem-fortianalyzer.md`](siem/fortisiem-fortianalyzer.md) | **FortiSIEM / FortiAnalyzer** | ✅ | — | event handlers + rules + correlação |
 
 ## Prevenir vs. detectar
-- **Prevenir (bloquear na borda):** ModSecurity, nginx, FortiWeb, AWS/Cloudflare WAF. Um token Base64
+- **Prevenir (bloquear na borda):** ModSecurity, nginx, FortiWeb, FortiGate IPS, AWS/Cloudflare WAF. Um token Base64
   malformado nunca é exigido por cliente correto, então bloquear costuma ser seguro — mas **comece em
   modo observação/alerta** por alguns dias e valide fluxos **auth/SAML/JWT** reais antes de negar.
 - **Detectar/correlacionar:** Suricata, Sigma, Splunk/Elastic, FortiSIEM/FortiAnalyzer, YARA. O sinal de

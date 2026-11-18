@@ -38,8 +38,8 @@ Basic ou URL** (MIME não é afetado).
 
 ## O que as fontes realmente mostram (honestidade sobre impacto)
 
-Cruzamos **13 fontes** (OpenJDK/Oracle, CISA, Calif.io, Amazon ALAS, Blackpoint, Chainguard, Talos,
-VulnCheck, Wiz, Aikido, The Hacker News) — que em geral **ecoam o advisory original**, não são 13
+Cruzamos **11 fontes públicas** (OpenJDK/Oracle, CISA, Calif.io, Amazon ALAS, Blackpoint, Chainguard,
+Talos, VulnCheck, Wiz, Aikido, The Hacker News) — que em geral **ecoam o advisory original**, não são 11
 confirmações independentes. Consenso:
 
 - ✅ **Reproduzido por nós (lab confinado):** escrita **OOB de 62 bytes** (`changed=62 first=50 last=111`),
@@ -183,6 +183,7 @@ forma ao JVM (divulgado abertamente — pedido pelos revisores):
 - [`docs/EXPLICACAO-SIMPLES.md`](docs/EXPLICACAO-SIMPLES.md) — o ataque para leigos (comece aqui).
 - [`docs/ANALISE.md`](docs/ANALISE.md) — análise técnica resumida (mecânica + versões).
 - [`docs/FORTINET-FABRIC.md`](docs/FORTINET-FABRIC.md) — como o Fortinet Fabric cobre, por função.
+- [`docs/ARTE-PROMPTS.md`](docs/ARTE-PROMPTS.md) — kit de prompts de arte + style guide da identidade visual (`docs/banner.png` é a social-preview exportada daí).
 - [`regras/`](regras/) — todas as regras (12 engines) + [índice/padrões canônicos](regras/README.md).
 - [`deteccao/`](deteccao/) + [`testes/`](testes/) — a lógica e a prova.
 - [`scanner/`](scanner/) — verificador **passivo** de exposição (1 GET benigno por endpoint).

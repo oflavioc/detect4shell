@@ -8,6 +8,9 @@
 # taxonomia Sigma padrão — ajuste para o mapeamento do seu backend (ex.: um pipeline pySigma). Estas
 # regras são mais ilustrativas que drop-in. A regra de "exceções repetidas" casa a substring
 # `IllegalArgumentException`, que pode ser ruidosa — correlacione com `java.util.Base64$Decoder`.
+# ATENÇÃO (backend sem lookbehind): os padrões `|re` abaixo usam lookbehind `(?<!...)`, que compila em
+# PCRE (Splunk/QRadar) mas NÃO em Elastic/Lucene nem KQL (RE2). Para esses, use a variante de fronteira
+# RE2: `(^|[^A-Za-z0-9+/_-])(?:[A-Za-z0-9+/_-]{4}){16,}=([^A-Za-z0-9+/_=-]|$)`.
 ---
 title: Java4Shell - Malformed Base64 trigger shape in HTTP request (network)
 id: 9f2a7c10-1d44-4b8e-9a01-java4shell-net1
