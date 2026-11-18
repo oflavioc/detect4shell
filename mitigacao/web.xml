@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Detect4Shell — wiring do Java4ShellFilter via web.xml.
+  Funciona tanto em Servlet 5.0+/jakarta (Tomcat 10+) quanto em 4.0/javax (Tomcat 9-),
+  desde que a classe use o namespace correspondente (ver mitigacao/Java4ShellFilter.java).
+  Cole dentro do seu <web-app> ... </web-app>.
+-->
+<filter>
+    <filter-name>Java4ShellFilter</filter-name>
+    <filter-class>detect4shell.Java4ShellFilter</filter-class>
+    <!-- Opcional: comece em modo DETECTONLY (só loga, não bloqueia) por alguns dias;
+         valide fluxos auth/SAML/JWT reais; depois remova para ligar o bloqueio. -->
+    <!--
+    <init-param>
+        <param-name>mode</param-name>
+        <param-value>detectonly</param-value>
+    </init-param>
+    -->
+</filter>
+<filter-mapping>
+    <filter-name>Java4ShellFilter</filter-name>
+    <url-pattern>/*</url-pattern>
+</filter-mapping>

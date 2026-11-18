@@ -174,6 +174,9 @@ forma ao JVM (divulgado abertamente — pedido pelos revisores):
 2. **Interino:** `-XX:-UseBASE64Intrinsics` (desliga só o intrínseco) ou `-XX:UseAVX=2` (só x86-64; quebra
    a JVM em ARM). Ambos verificados acima.
 3. **Não** use `-XX:DisableIntrinsic=_base64_decodeBlock` sozinho (a JVM não inicia).
+4. **Defense-in-depth na borda/aplicação** (enquanto não corrige): regra de WAF/proxy em
+   [`regras/`](regras/) e o **Servlet Filter** em [`mitigacao/`](mitigacao/) — este último roda dentro
+   da JVM e é **imune à evasão parser-differential** de rede (`%3D`, `=`, `&#61;`).
 
 ## Mapa do repositório
 
@@ -185,6 +188,7 @@ forma ao JVM (divulgado abertamente — pedido pelos revisores):
 - [`scanner/`](scanner/) — verificador **passivo** de exposição (1 GET benigno por endpoint).
 - [`laboratorio/`](laboratorio/) — reprodução confinada + `verificar_patch.sh`.
 - [`demo/`](demo/) — **ataque vs. defesa ao vivo**: alvo Java vulnerável + edge nginx (regra do repo) que bloqueia na borda; passo a passo com os resultados reais.
+- [`mitigacao/`](mitigacao/) — **mitigação na aplicação**: Servlet Filter (dentro da JVM, imune à evasão de rede) + wiring (web.xml / Spring Boot).
 
 ## Créditos e licença
 

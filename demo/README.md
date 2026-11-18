@@ -8,6 +8,8 @@ usando a regra nginx **do próprio repo** ([`../regras/nginx/detect4shell.conf`]
 > Internet. Não é um exploit: o "payload" é a string Base64 malformada já pública (`A×64 + "="`), e toda
 > consequência fica dentro do processo (ele **mede** a violação de memória; não é weaponizado).
 
+![Detect4Shell — ataque vs. defesa: sem a borda o gatilho dispara a escrita OOB de 62 bytes; com a borda é bloqueado antes do backend Java](demo-before-after.png)
+
 ## O que você vai ver (resultado real, capturado)
 
 ```
