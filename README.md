@@ -201,7 +201,7 @@ forma ao JVM (divulgado abertamente — pedido pelos revisores):
 - [`regras/`](regras/) — todas as regras (11 engines) + [índice/padrões canônicos](regras/README.md).
 - [`deteccao/`](deteccao/) + [`testes/`](testes/) — a lógica e a prova.
 - [`scanner/`](scanner/) — verificador **passivo** de exposição (1 GET benigno por endpoint).
-- [`laboratorio/`](laboratorio/) — reprodução confinada + `verificar_patch.sh`.
+- [`laboratorio/`](laboratorio/) — reprodução confinada + `verificar_patch.sh` + [`matrix/`](laboratorio/matrix/matrix.md) (**matriz CPU×JDK** validada: 17/21/25 × VBMI/sem-VBMI × flags/patch).
 - [`demo/`](demo/) — **ataque vs. defesa ao vivo**: alvo Java vulnerável + edge nginx (regra do repo) que bloqueia na borda; passo a passo com os resultados reais.
 - [`mitigacao/`](mitigacao/) — **mitigação na aplicação**: Servlet Filter (dentro da JVM, fecha a evasão `%3D`) + wiring (web.xml / Spring Boot).
 

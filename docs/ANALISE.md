@@ -36,6 +36,11 @@ bytes finais) com aritmética de tamanho que pode ficar **negativa**:
 | Decodificador | Basic (`getDecoder()`) **ou** URL (`getUrlDecoder()`). **MIME não** é afetado |
 | Entrada | Base64 malformado terminando em `=`, cauda 1–3 bytes além de um limite de bloco |
 
+**Matriz de validação (CPU × JDK)** — ver [`laboratorio/matrix/`](../laboratorio/matrix/matrix.md):
+reproduz em **Temurin 17/21/25** em CPU **com VBMI** (Zen 4); **imune** em **EPYC Zen-3 sem VBMI** (real);
+`-XX:-UseBASE64Intrinsics` / `-XX:UseAVX=2` e os builds **Corretto `.1`** (corrigidos) **suprimem**. Não é
+mais "validado em 1 máquina".
+
 Gatilho por versão: **JDK 17** → `"A"×128 + "="`; **JDK 21/25/27** → `"A"×64 + "="` (os bytes não
 precisam ser `A` — qualquer Base64 do alfabeto serve).
 
