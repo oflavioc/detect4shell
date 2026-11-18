@@ -1,0 +1,47 @@
+# Detect4Shell MONITOR-MODE honeypot: edge SENSOR (log-only) -> INERT MOCK.
+# The vulnerable demo/alvo/VulnBasicAuthServer.java is NEVER part of this stack.
+name: detect4shell-honeypot
+
+services:
+  sensor:
+    image: nginx:1.27-alpine
+    ports:
+      # Local-only by default. Change to "8097:8080" ONLY if you deliberately expose the inert sensor.
+      - "127.0.0.1:8097:8080"
+    volumes:
+      - ./sensor/nginx.conf:/etc/nginx/nginx.conf:ro
+      - j4s_logs:/var/log/j4s
+    networks: [edge, backend]
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    cap_add: [CHOWN, SETUID, SETGID]   # minimum nginx needs to drop to its worker user
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 64m
+    cpus: 0.25
+    pids_limit: 64
+    depends_on: [mock]
+    restart: unless-stopped
+
+  mock:
+    image: nginx:1.27-alpine
+    volumes:
+      - ./mock/nginx.conf:/etc/nginx/nginx.conf:ro
+    networks: [backend]          # internal-only: no route out, not published
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    cap_add: [CHOWN, SETUID, SETGID]   # minimum nginx needs to drop to its worker user
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 32m
+    cpus: 0.1
+    pids_limit: 32
+    restart: unless-stopped
+
+networks:
+  edge: {}                       # only carries the published sensor port
+  backend:
+    internal: true               # mock has no egress at all
+
+volumes:
+  j4s_logs: {}
