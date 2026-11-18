@@ -206,6 +206,7 @@ forma ao JVM (divulgado abertamente — pedido pelos revisores):
 - [`laboratorio/`](laboratorio/) — reprodução confinada + `verificar_patch.sh` + [`matrix/`](laboratorio/matrix/matrix.md) (**matriz CPU×JDK** validada: 17/21/25 × VBMI/sem-VBMI × flags/patch).
 - [`demo/`](demo/) — **ataque vs. defesa ao vivo**: alvo Java vulnerável + edge nginx (regra do repo) que bloqueia na borda; passo a passo com os resultados reais.
 - [`mitigacao/`](mitigacao/) — **mitigação na aplicação**: Servlet Filter (dentro da JVM, fecha a evasão `%3D`) + wiring (web.xml / Spring Boot).
+- [`honeypot/`](honeypot/) — **sensor em modo-monitor** (nginx detect-only → mock **inerte** `200 OK`): forma implantável para observar scans reais na borda sem expor nada vulnerável. O JVM vulnerável **nunca** entra no stack (backend inerte por design — alvo vulnerável não vira seguro só em modo-alerta).
 
 ## Testes & CI
 

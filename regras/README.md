@@ -44,9 +44,13 @@ amplo (pega 64 e 128). O `{16,}+` é **possessivo** (anti-ReDoS). Variante low-F
 | [`siem/fortisiem-fortianalyzer.md`](siem/fortisiem-fortianalyzer.md) | **FortiSIEM / FortiAnalyzer** | ✅ | — | event handlers + rules + correlação |
 
 > **Status de validação (honesto):** a forma foi validada em `testes/validar.py` (16/16, 0 FP no
-> conjunto curado) e **testada ao vivo apenas no nginx** (demo: bloqueia `=` **e** `==`). Os outros
-> engines são **ports da mesma forma canônica** — valide cada um no seu ambiente (sintaxe, buffers e
-> ponto de inspeção variam por produto; ex.: YARA/RE2 não têm lookbehind, FortiOS pode rejeitar possessivo).
+> conjunto curado), nos **motores reais** via [`testes/per-engine/`](../testes/per-engine/) (as 43 regexes
+> em google-re2 + pcre2 + yara, mais o **LOAD** das regras enviadas no engine real — YARA/nginx/Suricata),
+> e com **0 FP em 107.752 strings benignas** ([`testes/fp-replay/`](../testes/fp-replay/)). O **bloqueio
+> HTTP ponta-a-ponta ao vivo** foi demonstrado **só no nginx** (demo: bloqueia `=` **e** `==`). Os demais
+> engines são **ports da mesma forma canônica** (regex + LOAD testados; bloqueio ao vivo não) — valide cada
+> um no seu ambiente (sintaxe, buffers e ponto de inspeção variam por produto; ex.: YARA/RE2 não têm
+> lookbehind, FortiOS pode rejeitar possessivo).
 
 ## Prevenir vs. detectar
 - **Prevenir (bloquear na borda):** ModSecurity, nginx, FortiWeb, FortiGate IPS, AWS/Cloudflare WAF. Um token Base64
