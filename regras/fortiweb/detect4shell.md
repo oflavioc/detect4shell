@@ -7,6 +7,11 @@ Se a sua versão rejeitar o lookbehind, use a **forma de fallback RE2** indicada
 > Nomes de `target` variam entre versões do FortiWeb — ajuste conforme o seu build (os abaixo
 > são os comuns). Comece a ação em **`alert`** por alguns dias; depois troque para **`alert_deny`**.
 
+> 🎬 **Walkthrough ao vivo (ataque vs. defesa nesta stack):**
+> [`../../demo/fortiweb/README.md`](../../demo/fortiweb/README.md) — esta Custom Signature criada na
+> GUI de um FortiWeb-VM 8.0.8 (isolada só no virtual server de teste), com o Console de Ataque
+> provando o primitivo no alvo Java local e o `403` de bloqueio na borda.
+
 ## Expressões (regex)
 
 **Precisa (PCRE com lookbehind)** — header / cookie (campos não URL-encoded):
@@ -28,7 +33,7 @@ Se a sua versão rejeitar o lookbehind, use a **forma de fallback RE2** indicada
 
 ```
 config waf custom-protection-rule
-    edit "D4S-Java4Shell-Base64"
+    edit "D4S_Java4Shell_Base64"
         set action alert          # troque para alert_deny após ajustar
         set severity High
         set case-sensitivity enable
@@ -63,15 +68,15 @@ end
 Agrupe e aplique no perfil de proteção:
 ```
 config waf custom-protection-group
-    edit "D4S-Java4Shell"
-        set custom-protection-rule "D4S-Java4Shell-Base64"
+    edit "D4S_Java4Shell"
+        set custom-protection-rule "D4S_Java4Shell_Base64"
     next
 end
 # depois: referencie o grupo no Web Protection Profile usado pela(s) policy(ies) da app Java exposta.
 ```
 
 ## Via GUI
-1. **Web Protection → Custom Signature → Custom Signature Group**: crie um grupo `D4S-Java4Shell`.
+1. **Web Protection → Custom Signature → Custom Signature Group**: crie um grupo `D4S_Java4Shell`.
 2. Adicione uma **Signature**: Direction = **Request**, Case Sensitive = **Yes**.
 3. Adicione um **Target** por campo (HTTP Header `Authorization`, Request URI, Cookie, Request Body)
    com **Expression Type = Regular Expression** e cole a regex correspondente acima.

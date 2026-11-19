@@ -4,6 +4,17 @@ Mostra, passo a passo, o **ataque acontecendo** (a escrita fora-dos-limites de 6
 Java4Shell) e depois a **defesa na borda** barrando o mesmo request **antes** de chegar no Java —
 usando a regra nginx **do próprio repo** ([`../regras/nginx/detect4shell.conf`](../regras/nginx/detect4shell.conf)).
 
+**Três caminhos para a mesma história (ataque → defesa).** Este README percorre o **demo nginx** — o
+caminho atual, 100% por terminal, logo abaixo. Há mais dois, que mostram o mesmo gatilho com a stack
+Fortinet real e de forma visual:
+- **FortiWeb ao vivo** — assinatura custom num FortiWeb-VM barrando o gatilho na borda, passo a passo
+  pela GUI do appliance (criar a assinatura, isolar o policy de teste sem tocar no público, provar o
+  `403`): [`fortiweb/README.md`](fortiweb/README.md).
+- **Console de Ataque (visual)** — app web Java que dispara o gatilho e **classifica o resultado em 4
+  estados**: ✅ chegou e disparou o OOB · 🛡️ barrado pelo WAF · ⚠️ chegou mas **não** disparou (JVM
+  mitigada / CPU sem VBMI / patch) · ❓ sem resposta. Mostra a diferença entre "passou na borda" e
+  "backend de fato explorável" sem ler log: [`console/`](console/).
+
 > ⚠️ **SÓ LABORATÓRIO.** O alvo é um servidor Java **deliberadamente vulnerável**. O passo 1 sobe em
 > `0.0.0.0` (preciso para o container nginx alcançá-lo via `host.docker.internal`), o que o deixa
 > **alcançável pela LAN** — rode só em **rede isolada/confiável** e **nunca** o exponha na Internet.
@@ -129,3 +140,11 @@ ação `alert_deny`) e a correlação em FortiSIEM/FortiAnalyzer em
 [`../regras/siem/fortisiem-fortianalyzer.md`](../regras/siem/fortisiem-fortianalyzer.md).
 **Importante:** o gatilho não tem metacaractere de ataque (é só Base64 + `=`), então o conjunto de
 assinaturas **padrão** de um WAF não o pega — é preciso a **assinatura da forma** (a do Detect4Shell).
+
+**Quer ver no appliance de verdade?** O passo a passo **ao vivo** num FortiWeb-VM está em
+[`fortiweb/README.md`](fortiweb/README.md): criar a Custom Signature com a regex canônica, isolar a
+Signature Policy só no virtual server de teste (sem encostar no policy público) e provar o `403` de
+bloqueio com Attack ID. **Sem overclaim:** lá o **OOB** (estado verde) é demonstrado contra o **alvo
+Java local vulnerável**, e o **`403` (Deny)** contra o **FortiWeb** — dois fatos separados, cada um
+provado onde de fato aconteceu. E bloquear na borda é controle **compensatório**: o conserto é
+**corrigir o JDK** (builds `.1`).

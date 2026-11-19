@@ -134,7 +134,7 @@ Todas as regras partem da mesma forma validada. Índice e padrões canônicos: [
 | Sigma → SIEM | ✅ | — | [`regras/sigma/`](regras/sigma/detect4shell.yml) |
 | ModSecurity v3 | ✅ | ✅ | [`regras/modsecurity/`](regras/modsecurity/detect4shell.conf) |
 | nginx (borda) | ✅ | ✅ | [`regras/nginx/`](regras/nginx/detect4shell.conf) |
-| **FortiWeb** (WAF) | ✅ | ✅ | [`regras/fortiweb/`](regras/fortiweb/detect4shell.md) |
+| **FortiWeb** (WAF) | ✅ | ✅ | [`regras/fortiweb/`](regras/fortiweb/detect4shell.md) · [walkthrough](demo/fortiweb/) |
 | **FortiGate IPS** | ✅ | ✅ | [`regras/fortigate-ips/`](regras/fortigate-ips/detect4shell.md) |
 | AWS WAFv2 | ✅ | ✅ | [`regras/cloud-waf/`](regras/cloud-waf/aws-waf.json) |
 | Cloudflare WAF | ✅ | ✅ | [`regras/cloud-waf/`](regras/cloud-waf/cloudflare.md) |
@@ -204,7 +204,7 @@ forma ao JVM (divulgado abertamente — pedido pelos revisores):
 - [`deteccao/`](deteccao/) + [`testes/`](testes/) — a lógica e a prova.
 - [`scanner/`](scanner/) — verificador **passivo** de exposição (1 GET benigno por endpoint).
 - [`laboratorio/`](laboratorio/) — reprodução confinada + `verificar_patch.sh` + [`matrix/`](laboratorio/matrix/matrix.md) (**matriz CPU×JDK** validada: 17/21/25 × VBMI/sem-VBMI × flags/patch).
-- [`demo/`](demo/) — **ataque vs. defesa ao vivo**: alvo Java vulnerável + edge nginx (regra do repo) que bloqueia na borda; passo a passo com os resultados reais.
+- [`demo/`](demo/) — **ataque vs. defesa ao vivo**: alvo Java vulnerável + edge nginx (regra do repo) que bloqueia na borda; passo a passo com os resultados reais. Inclui o **[Console de Ataque](demo/console/)** (frontend web que dispara o gatilho e classifica cada rajada em **4 estados**: OOB no alvo Java local, bloqueio do WAF na borda, chegou-sem-disparar, ou sem-resposta) e o **[walkthrough FortiWeb ao vivo](demo/fortiweb/)** (FortiWeb-VM 8.0.8, Custom Signature da forma em `Alert`→`Alert & Deny`: bloqueio **403** na borda demonstrado via `curl`; a escrita OOB verde foi no alvo Java local, **não** através do WAF).
 - [`mitigacao/`](mitigacao/) — **mitigação na aplicação**: Servlet Filter (dentro da JVM, fecha a evasão `%3D`) + wiring (web.xml / Spring Boot).
 - [`honeypot/`](honeypot/) — **sensor em modo-monitor** (nginx detect-only → mock **inerte** `200 OK`): forma implantável para observar scans reais na borda sem expor nada vulnerável. O JVM vulnerável **nunca** entra no stack (backend inerte por design — alvo vulnerável não vira seguro só em modo-alerta).
 

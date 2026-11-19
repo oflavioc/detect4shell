@@ -26,6 +26,11 @@ import java.util.concurrent.atomic.AtomicLong;
 public final class VulnBasicAuthServer {
     private static volatile long sink;
     private static final AtomicLong n = new AtomicLong();
+    // Buffer-sentinela REUTILIZADO (mesmo padrao do reprodutor Base64Trigger): aquecido com 200k decodes
+    // e reusado a cada request. E isso que torna a medicao do OOB DETERMINISTICA — array FRESCO por request
+    // dispara ~0% (heap varia); o array reusado/aquecido dispara de forma estavel. Handlers rodam
+    // sequencialmente (setExecutor(null)), entao o TARGET compartilhado nao sofre corrida.
+    private static final byte[] TARGET = new byte[4096];
 
     public static void main(String[] args) throws Exception {
         String bind = args.length > 0 ? args[0] : "127.0.0.1";
@@ -73,11 +78,14 @@ public final class VulnBasicAuthServer {
         int bodyLen = cred.endsWith("=") ? cred.length() - 1 : cred.length();
         if (bodyLen < 1) return 0;
         int outputEnd = bodyLen / 4 * 3 + 2;
-        byte[] dst = new byte[4096];
-        Arrays.fill(dst, (byte) 0x5a);
-        try { Base64.getDecoder().decode(src, dst); } catch (IllegalArgumentException ignored) {}
+        // Reusa o buffer-sentinela aquecido (padrao do reprodutor). O OOB dispara de forma estavel no
+        // 1o decode malformado apos o warm-up; um malformado DEOPTIMIZA o metodo (excecao em codigo
+        // compilado), entao disparos repetidos no MESMO processo param ate re-aquecer. Para o demo, o
+        // alvo e (re)iniciado fresco antes do disparo -> o 1o request da rajada dispara o OOB (sinal de lab).
+        Arrays.fill(TARGET, (byte) 0x5a);
+        try { Base64.getDecoder().decode(src, TARGET); } catch (IllegalArgumentException ignored) {}
         int changed = 0;
-        for (int i = outputEnd; i >= 0 && i < dst.length; i++) if (dst[i] != (byte) 0x5a) changed++;
+        for (int i = outputEnd; i >= 0 && i < TARGET.length; i++) if (TARGET[i] != (byte) 0x5a) changed++;
         return changed;
     }
 
@@ -85,8 +93,7 @@ public final class VulnBasicAuthServer {
     private static void warmJit() {
         Base64.Decoder d = Base64.getDecoder();
         byte[] valid = "A".repeat(64).getBytes(StandardCharsets.US_ASCII);
-        byte[] scratch = new byte[4096];
-        for (int i = 0; i < 200_000; i++) sink += d.decode(valid, scratch);
+        for (int i = 0; i < 200_000; i++) sink += d.decode(valid, TARGET);   // aquece o intrinseco E prepara o TARGET reusado
         System.out.println("[alvo] JIT aquecido (intrinseco Base64 AVX-512 ativo)");
     }
 }
