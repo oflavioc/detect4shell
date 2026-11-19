@@ -13,12 +13,19 @@
 // NÃO é um exploit: o "payload" é só a string Base64 pública (A×64 + "="); nada é weaponizado.
 // Use apenas contra sistemas que você está autorizado a testar.
 //
+// Trava de lab (higiene, não "segurança"): por padrão o console só dispara contra LOOPBACK
+// (127.0.0.1 e todo o 127.0.0.0/8, localhost, ::1, *.localhost). Para apontar p/ QUALQUER outro
+// host — só em rede isolada e com autorização — habilite explicitamente com a flag --allow-remote
+// OU o env D4S_ALLOW_REMOTE=1. Sem o opt-in, um alvo não-loopback é RECUSADO antes de subir nada.
+//
 // Compilar/rodar (JDK 17+):
 //   javac AttackConsole.java
-//   java AttackConsole [alvo] [porta-ui]
-//     alvo     default http://127.0.0.1:8899   (aponte para o seu virtual server do FortiWeb)
+//   java AttackConsole [alvo] [porta-ui] [--allow-remote]
+//     alvo     default http://127.0.0.1:8899   (loopback; aponte p/ seu virtual server FortiWeb)
 //     porta-ui default 8090                     (abra http://127.0.0.1:8090 no navegador)
-//   ou defina o alvo por env:  D4S_TARGET=http://10.10.10.101:8899 java AttackConsole
+//   ou defina o alvo por env:  D4S_TARGET=http://10.10.10.101:8899 java AttackConsole  (+ opt-in)
+//   alvo remoto (opt-in):      D4S_ALLOW_REMOTE=1 java AttackConsole http://10.10.10.101:8899
+//                          ou  java AttackConsole http://10.10.10.101:8899 --allow-remote
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
@@ -48,8 +55,31 @@ public class AttackConsole {
             .build();
 
     public static void main(String[] args) throws Exception {
-        if (args.length >= 1 && !args[0].isBlank()) TARGET = args[0].trim();
-        if (args.length >= 2) PORT = Integer.parseInt(args[1].trim());
+        // separa a flag --allow-remote dos argumentos posicionais [alvo] [porta-ui]
+        boolean allowRemoteFlag = false;
+        java.util.List<String> pos = new java.util.ArrayList<>();
+        for (String a : args) {
+            if (a == null) continue;
+            if (a.trim().equals("--allow-remote")) allowRemoteFlag = true;
+            else pos.add(a);
+        }
+        if (pos.size() >= 1 && !pos.get(0).isBlank()) TARGET = pos.get(0).trim();
+        if (pos.size() >= 2) PORT = Integer.parseInt(pos.get(1).trim());
+
+        // Trava de lab: alvo não-loopback exige opt-in EXPLÍCITO (--allow-remote ou D4S_ALLOW_REMOTE=1).
+        boolean allowRemote = allowRemoteFlag || truthy(System.getenv("D4S_ALLOW_REMOTE"));
+        if (!isLoopbackTarget(TARGET) && !allowRemote) {
+            System.err.println("[AttackConsole] RECUSADO: alvo não-loopback \"" + TARGET + "\".");
+            System.err.println("  Esta é uma ferramenta de LAB; por padrão ela só dispara contra loopback");
+            System.err.println("  (127.0.0.1 / 127.0.0.0/8, localhost, ::1, *.localhost). Para apontar p/ outro");
+            System.err.println("  host — só em rede isolada e com autorização — habilite o alvo remoto de forma");
+            System.err.println("  explícita:");
+            System.err.println("     java AttackConsole " + TARGET + " --allow-remote");
+            System.err.println("     # ou");
+            System.err.println("     D4S_ALLOW_REMOTE=1 java AttackConsole " + TARGET);
+            System.exit(2);
+            return;
+        }
 
         HttpServer s = HttpServer.create(new InetSocketAddress(PORT), 0);
         s.createContext("/", ex -> {
@@ -64,6 +94,8 @@ public class AttackConsole {
         s.start();
         System.out.println("[AttackConsole] UI:  http://127.0.0.1:" + PORT);
         System.out.println("[AttackConsole] alvo: " + TARGET);
+        if (!isLoopbackTarget(TARGET))
+            System.out.println("[AttackConsole] alvo remoto HABILITADO via opt-in (--allow-remote / D4S_ALLOW_REMOTE=1).");
         System.out.println("[AttackConsole] Ctrl-C para sair.");
     }
 
@@ -139,6 +171,26 @@ public class AttackConsole {
     // ---------- helpers ----------
     static String repeat(char c, int n) { char[] a = new char[n]; java.util.Arrays.fill(a, c); return new String(a); }
     static String previewB64(String b) { return b.length() > 40 ? b.substring(0, 40) + "…(" + b.length() + " chars)" : b; }
+
+    // opt-in "verdadeiro": 1 / true / yes / on (case-insensitive). Qualquer outra coisa (ou null) = não.
+    static boolean truthy(String v) {
+        if (v == null) return false;
+        String t = v.trim().toLowerCase(java.util.Locale.ROOT);
+        return t.equals("1") || t.equals("true") || t.equals("yes") || t.equals("on");
+    }
+
+    // loopback = 127.0.0.0/8, ::1, localhost, *.localhost. Fail-closed: alvo não-parseável conta como remoto.
+    static boolean isLoopbackTarget(String target) {
+        String host;
+        try { host = URI.create(target).getHost(); } catch (Exception e) { return false; }
+        if (host == null) return false;              // autoridade não-"server-based" (ex.: host com '_') -> remoto
+        host = host.trim();
+        if (host.startsWith("[") && host.endsWith("]")) host = host.substring(1, host.length() - 1);  // [::1] -> ::1
+        String h = host.toLowerCase(java.util.Locale.ROOT);
+        if (h.equals("localhost") || h.endsWith(".localhost")) return true;
+        if (h.equals("::1") || h.equals("0:0:0:0:0:0:0:1")) return true;
+        return h.matches("127\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}");
+    }
 
     static String param(String rawQuery, String key, String def) {
         if (rawQuery == null) return def;

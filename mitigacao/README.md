@@ -27,17 +27,45 @@ responde **HTTP 400** (ou só loga, em `mode=detectonly`). Usa **o mesmo padrão
 do repo ([regras/README.md](../regras/README.md)), com quantificador possessivo (anti-ReDoS).
 
 **Escopo (honesto):** cobre os sinks pré-auth documentados — `Authorization` (Basic/Bearer),
-parâmetros de query e de corpo **form** (SAMLRequest/SAMLResponse/RelayState) e cookies. **Não**
-inspeciona o corpo bruto de JSON/XML (para não consumir/quebrar o stream da app); para um token
-Base64 dentro de um corpo JSON, conte com a **flag de JVM** (camada 2) ou a **regra de borda**.
+parâmetros de query e de corpo **form** (SAMLRequest/SAMLResponse/RelayState) e cookies. **Não** lê o
+corpo bruto de JSON/XML: o container não parseia esses content-types em params, então o filtro não
+toca o stream deles — para um token Base64 dentro de um corpo JSON, conte com a **flag de JVM**
+(camada 2) ou a **regra de borda**.
+
+> **Se a sua app é JSON-API-first, o filtro (camada 3) cobre pouco** — a maior parte do payload entra
+> por um corpo JSON que ele não inspeciona. **Priorize a camada 1 (patch) e a camada 2 (flag de JVM).**
+
+**⚠️ Dois footguns de produção** (porque o filtro chama `getParameterMap()` cedo, em
+`HIGHEST_PRECEDENCE`). Em POST `application/x-www-form-urlencoded`/multipart, pedir os params faz o
+container **parsear o corpo** — e isso tem dois efeitos colaterais não óbvios:
+
+1. **Consome o input stream.** Os params seguem acessíveis via `getParameter*` (o container cacheia) —
+   quem lê params do jeito normal **não** quebra; mas quem lê o **corpo bruto** depois
+   (`getInputStream()`/`getReader()`: verificação de **HMAC sobre o corpo**, algumas implementações de
+   **SAML POST-binding**, parsers custom) acha o stream **vazio** e quebra. Como SAML é alvo explícito
+   deste filtro, **valide o seu fluxo SAML POST antes de ligar o bloqueio**.
+2. **Trava o charset.** Parsear params fixa o character-encoding da requisição. Se o filtro rodar
+   **antes** do `CharacterEncodingFilter` da app, o default é travado e um `setCharacterEncoding()`
+   posterior não surte mais efeito → **mojibake** em valores de form não-ASCII.
+
+**Como conviver com os dois:** ordene o filtro **logo após** o `CharacterEncodingFilter` (ele só precisa
+preceder o **sink de Base64**, não o setter de encoding) ou chame `setCharacterEncoding()` você mesmo; e
+rode em **`mode=detectonly`** tempo suficiente para pegar **regressões de encoding/stream** antes de
+negar. Em último caso, o init-param **`skipFormBody=true`** liga o modo **stream-safe** — não toca no
+corpo (inspeciona só header/cookie/query-string), evitando ambos os footguns. **Lacuna honesta desse
+modo:** params de **corpo** (SAML POST-binding `SAMLResponse`/`RelayState`) deixam de ser vistos — nesse
+modo a cobertura de corpo fica com a camada 1 (patch) / 2 (flag de JVM); header, cookie e **query-string**
+(com a evasão `%3D` fechada via URL-decode) continuam cobertos.
 
 **Validação:** o **padrão TRIGGER** é byte-idêntico ao canônico (`regras/README.md`) e o **CI garante
 isso a cada push** via o drift-guard [`testes/canonical_sync.py`](../testes/canonical_sync.py) — logo é
-exercido nos motores reais (pcre2/re2/yara) pela matriz [`testes/per-engine/`](../testes/per-engine/).
-A **compilação completa** do filtro foi verificada manualmente em `jakarta.servlet` 6.0.0 **e**
-`javax.servlet` 4.0.1; spot-check do padrão no motor de regex do Java = **10/10** (gatilho de 64 e 128
-chars, os dois alfabetos, `Authorization` **e `==`** casam; path REST misto, 3-pad, base64 válido,
-JWT-like e `<64` chars **não**).
+exercido nos motores reais (pcre2/re2/yara) pela matriz [`testes/per-engine/`](../testes/per-engine/) e
+pela unidade [`testes/validar.py`](../testes/validar.py) (**16/16**, 0 falso-positivo). O filtro
+**compila com `javac` 21** contra a superfície `jakarta.servlet` 6.0 (as assinaturas usadas —
+`getParameterMap`/`getMethod`/`getContentType`/`getQueryString`/`getHeaders`/`getCookies` — são idênticas
+em `javax.servlet` 4.0.1) e passa um **harness funcional de 9 cenários** cobrindo default × `skipFormBody`:
+gatilho no corpo form (bloqueia no default; **lacuna esperada** no stream-safe), na query (inclusive a
+evasão `%3D`), em `Authorization` e em cookie; GET e JSON/benigno passam.
 
 ### Como implantar
 
@@ -73,15 +101,25 @@ public class Detect4ShellConfig {
         FilterRegistrationBean<Java4ShellFilter> reg = new FilterRegistrationBean<>();
         reg.setFilter(new Java4ShellFilter());
         reg.addUrlPatterns("/*");
-        reg.setOrder(Ordered.HIGHEST_PRECEDENCE); // antes de qualquer decode da app
-        // reg.addInitParameter("mode", "detectonly"); // opcional: só logar primeiro
+        reg.setOrder(Ordered.HIGHEST_PRECEDENCE + 1); // LOGO APÓS o CharacterEncodingFilter (que fica
+                                                      // em HIGHEST_PRECEDENCE) p/ não travar o charset;
+                                                      // ainda antes do decode de Base64 da app.
+        // reg.addInitParameter("mode", "detectonly");   // opcional: só logar primeiro (dias) p/ pegar
+        //                                                // regressões de encoding/stream antes de negar
+        // reg.addInitParameter("skipFormBody", "true"); // opcional: stream-safe — não lê o corpo form
+        //                                                // (não quebra HMAC/SAML-POST), mas perde params de corpo
         return reg;
     }
 }
 ```
 
 ### Ordem de implantação recomendada
-1. Suba com `mode=detectonly` e observe os logs `[detect4shell]` por alguns dias (um Base64
-   malformado nunca é exigido por um cliente correto, mas valide auth/SAML/JWT reais).
+0. **Posicione o filtro logo após o `CharacterEncodingFilter`** da app (não antes) — ele só precisa
+   preceder o **sink de Base64**, não o setter de encoding; isso evita a trava de charset (footgun #2).
+   Se a app lê o **corpo bruto** de POSTs form (HMAC sobre o corpo, SAML POST-binding por assinatura),
+   use `skipFormBody=true` **ou** garanta que este filtro não roda antes desse leitor (footgun #1).
+1. Suba com `mode=detectonly` e observe os logs `[detect4shell]` por alguns dias — tempo suficiente para
+   pegar **regressões de encoding/stream** (um Base64 malformado nunca é exigido por um cliente correto,
+   mas valide auth/SAML/JWT reais **e** os fluxos que leem o corpo).
 2. Remova o `detectonly` para **bloquear** (400).
 3. Em paralelo, **atualize o JDK** (camada 1 — o controle definitivo).

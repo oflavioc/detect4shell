@@ -22,6 +22,10 @@ def compile_entry(e):
     kind, rx = e["kind"], e["regex"]
     if kind == "re2":
         pat = re2.compile(rx)
+        # Lucene `regexp`/`RLIKE` is term-anchored: entries flagged full=True are matched faithfully with
+        # .fullmatch (the whole value), not substring .search. All other re2 entries keep .search.
+        if e.get("full"):
+            return lambda s: pat.fullmatch(s) is not None
         return lambda s: pat.search(s) is not None
     if kind == "pcre":
         pat = pcre2.compile(rx, flags=pcre2.I if "i" in e["flags"] else 0)

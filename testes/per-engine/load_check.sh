@@ -3,7 +3,7 @@
 # Separate from the regex matrix (run.sh). Read-only mounts; never edits regras/. Exit 1 if any engine fails to load.
 #   YARA     : yara-python in detect4shell-per-engine (python:3.12-slim)        -> yara.compile(filepath=...)
 #   nginx    : nginx:1.27-alpine  `nginx -t` with the shipped file include'd in http{}
-#   Suricata : jasonish/suricata:latest (Suricata 8.0.8)  `suricata -T -S <rules>`; asserts 0 failed, loaded == #alert lines
+#   Suricata : jasonish/suricata:8.0.8 (PINNED; was :latest)  `suricata -T -S <rules>`; asserts 0 failed, loaded == #alert lines
 set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(cd "$HERE/../.." && { pwd -W 2>/dev/null || pwd; })"
@@ -26,7 +26,7 @@ if [ $rc -eq 0 ] && echo "$out" | grep -q "syntax is ok" && echo "$out" | grep -
 else row nginx NO "$(echo "$out" | tail -2 | tr '\n' ' ')"; fi
 
 # ---- Suricata ----
-out="$(D --entrypoint suricata jasonish/suricata:latest -T -v -S /repo/regras/suricata/detect4shell.rules -l /tmp 2>&1)"; rc=$?
+out="$(D --entrypoint suricata jasonish/suricata:8.0.8 -T -v -S /repo/regras/suricata/detect4shell.rules -l /tmp 2>&1)"; rc=$?
 expected="$(grep -c '^alert' "$RULES/suricata/detect4shell.rules")"
 sline="$(echo "$out" | grep -E 'rules successfully loaded' | sed 's/^.*detect: //')"
 failed="$(echo "$sline" | grep -oE '[0-9]+ rules failed' | grep -oE '^[0-9]+')"

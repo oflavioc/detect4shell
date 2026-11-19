@@ -21,6 +21,13 @@ Fortinet real e de forma visual:
 > Não é um exploit: o "payload" é a string Base64 malformada já pública (`A×64 + "="`), e toda
 > consequência fica dentro do processo (ele **mede** a violação de memória; não é weaponizado).
 
+> 🧪 **Trava de loopback no `atacar.sh` (higiene de lab).** Por padrão, o `./atacar.sh` só dispara
+> contra **loopback** (`127.0.0.1`/`127.0.0.0/8`, `localhost`, `::1`, `*.localhost`) — os passos
+> abaixo usam `127.0.0.1`, então **nada muda**. Para um alvo em outro host (só em rede isolada e
+> autorizado), habilite **explicitamente** com o env: `D4S_ALLOW_REMOTE=1 ./atacar.sh http://HOST:porta/`.
+> Sem o opt-in, um host não-loopback é recusado (saída `2`) com uma mensagem clara. A mesma trava
+> existe no Console de Ataque ([`console/`](console/)) via `--allow-remote` ou `D4S_ALLOW_REMOTE=1`.
+
 ![Detect4Shell — ataque vs. defesa: sem a borda o gatilho dispara a escrita OOB de 62 bytes; com a borda é bloqueado antes do backend Java](demo-before-after.png)
 
 ## O que você vai ver (resultado real, capturado)

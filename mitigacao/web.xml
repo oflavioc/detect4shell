@@ -3,6 +3,8 @@
   Sem prólogo <?xml?> de propósito — o seu web.xml já tem o seu; isto são só os dois elementos a colar.
   Funciona tanto em Servlet 5.0+/jakarta (Tomcat 10+) quanto em 4.0/javax (Tomcat 9-),
   desde que a classe use o namespace correspondente (ver mitigacao/Java4ShellFilter.java).
+  ORDEM: ponha este <filter-mapping> DEPOIS do mapping do seu CharacterEncodingFilter (em web.xml a
+  ordem dos <filter-mapping> define a cadeia) — senão o filtro trava o charset (footgun #2; ver README).
   Cole dentro do seu <web-app> ... </web-app>.
 -->
 <filter>
@@ -14,6 +16,15 @@
     <init-param>
         <param-name>mode</param-name>
         <param-value>detectonly</param-value>
+    </init-param>
+    -->
+    <!-- Opcional: modo STREAM-SAFE — não lê o corpo de POSTs form (não quebra HMAC-sobre-corpo /
+         SAML POST-binding por assinatura, nem trava o charset), ao custo de perder os params de
+         CORPO (SAML POST). Header/cookie/query-string seguem cobertos. Ver README §Escopo (honesto). -->
+    <!--
+    <init-param>
+        <param-name>skipFormBody</param-name>
+        <param-value>true</param-value>
     </init-param>
     -->
 </filter>

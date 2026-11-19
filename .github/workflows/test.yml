@@ -5,8 +5,8 @@ on:
 jobs:
   regression-gate:
     name: Detect4Shell regression gate (test.sh)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04   # pinned (was ubuntu-latest) so the hosted image toolchain does not silently roll
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.2.2   # pinned (was @v4) for a reproducible gate
       - name: Run gate
         run: bash test.sh

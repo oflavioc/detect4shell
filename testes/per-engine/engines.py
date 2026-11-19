@@ -34,12 +34,13 @@ ESC = {
 MANIFEST = []
 
 
-def _add(engine, file, raw, kind, esc="none", flags=""):
+def _add(engine, file, raw, kind, esc="none", flags="", full=False):
+    # full=True: match with .fullmatch instead of substring .search (see the Elastic/Lucene entry below).
     regex = ESC[esc][1](raw)
     if not _is_b64_rule(regex):      # prose/example text, not a shipped detection regex
         return
     MANIFEST.append({"engine": engine, "file": file, "regex": regex, "kind": kind,
-                     "flags": flags, "escape": esc, "context": _ctx(regex)})
+                     "flags": flags, "escape": esc, "context": _ctx(regex), "full": full})
 
 
 def _ctx(rx):
@@ -104,7 +105,11 @@ txt = read(f)
 for i, m in enumerate(re.finditer(r'\| rex field=_raw "(.+)"\s*$', txt, re.M), 1):
     _add(f"splunk:rex{i}", f, m.group(1), "pcre")
 for i, m in enumerate(re.finditer(r'"http\.request\.headers\.authorization": "((?:[^"\\]|\\.)*)"', txt), 1):
-    _add(f"elastic:regexp{i}", f, m.group(1), "re2", "json")
+    # Elasticsearch `regexp` runs on LUCENE, which is term-ANCHORED (implicit fullmatch), NOT substring
+    # search. RE2 is the faithful lookaround-free proxy, but it MUST be driven with .fullmatch (full=True):
+    # the correct Lucene form uses open `.*`-boundaries that, under .search, float into a sub-window ending
+    # right before a '=' and FP on long valid base64. See regras/siem/splunk-elastic.md.
+    _add(f"elastic:regexp{i}", f, m.group(1), "re2", "json", full=True)
 
 # ---------------- Sigma ----------------
 f = "sigma/detect4shell.yml"

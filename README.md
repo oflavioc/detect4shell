@@ -66,7 +66,7 @@ seguro). **Corrija assim mesmo** — derrubar um sistema crítico já é grave.
 
 ## Validação em laboratório (o que realmente foi executado)
 
-Reproduzido com **segurança** em container isolado `--network none` (`eclipse-temurin:21-jdk-noble` =
+Reproduzido com **segurança** em container isolado `--network none` (`eclipse-temurin:21.0.13_9-jdk-noble` =
 OpenJDK **21.0.13**, sem patch em 2026-11-18) num host AVX-512 VBMI, usando só o gatilho confinado
 `laboratorio/Base64Trigger.java` (toda escrita fica dentro de um array de 4096 bytes do próprio programa):
 
@@ -210,12 +210,14 @@ forma ao JVM (divulgado abertamente — pedido pelos revisores):
 
 ## Testes & CI
 
-`bash test.sh` roda o gate de regressão completo localmente (requer Docker + python3). O CI roda o mesmo em todo push/PR e **bloqueia** em caso de falha. Tiers, em ordem (para no primeiro que falhar):
+`bash test.sh` roda o gate de regressão completo localmente (requer Docker + python3). O CI roda o mesmo em todo push/PR e **bloqueia** em caso de falha. **6 tiers**, em ordem (para no primeiro que falhar):
 
 1. `testes/validar.py` — teste unitário canônico de FN + FP (Python puro, sem Docker).
-2. `testes/per-engine/run.sh` — matriz por engine: as 43 regexes nos motores reais.
-3. `testes/per-engine/load_check.sh` — as regras enviadas **carregam** no engine real (YARA/nginx/Suricata).
-4. `testes/fp-replay/run.sh` — replay de ~108k strings benignas, 0 falsos positivos.
+2. `testes/canonical_sync.py` — drift-guard: a regex canônica byte-idêntica entre a referência e as cópias fora-de-banda (Python puro, sem Docker).
+3. `testes/per-engine/run.sh` — matriz por engine: as 43 regexes nos motores reais (re2/pcre2/yara; a regra Elastic é casada com `fullmatch`, fiel à semântica term-anchored do Lucene).
+4. `testes/per-engine/load_check.sh` — as regras enviadas **carregam** no engine real (YARA/nginx/Suricata).
+5. `testes/fp-replay/run.sh` — replay de ~108k strings benignas, 0 falsos positivos.
+6. `testes/on-the-wire/run.sh` — **replay ao vivo**: PCAP no Suricata + requisição HTTP no ModSecurity provam que a regra **dispara no fio** (não só que a regex casa e o arquivo carrega).
 
 `laboratorio/matrix/run_matrix.sh` (imagens JDK externas que mudam com o tempo) é validação periódica, fora do gate bloqueante (`RUN_MATRIX=1 bash test.sh` roda só como aviso).
 

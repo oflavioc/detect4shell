@@ -1,0 +1,8 @@
+# Detect4Shell on-the-wire — WAF de teste = OWASP ModSecurity (nginx, v3, SEM CRS).
+# So acrescentamos um script de entrypoint que da Include nas regras ENVIADAS (montadas em /rules)
+# DEPOIS que a imagem gera seu modsecurity-override.conf. Nao editamos nada da imagem base.
+# Pinado por digest (reprodutibilidade do gate): e a MESMA imagem owasp/modsecurity:nginx-alpine
+# verificada pelo run.sh. Para atualizar: troque o digest e rode testes/on-the-wire/run.sh de novo.
+FROM owasp/modsecurity:nginx-alpine@sha256:c9c6652f254743f85c0249d59fd31b6e31c46676ae3baeef312cf056eba600b3
+COPY 95-detect4shell-rules.sh /docker-entrypoint.d/95-detect4shell-rules.sh
+RUN chmod +x /docker-entrypoint.d/95-detect4shell-rules.sh

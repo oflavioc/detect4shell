@@ -20,12 +20,17 @@ amplo (pega 64 e 128). O `{16,}+` é **possessivo** (anti-ReDoS); FortiWeb/Forti
 | Motor de regex | Padrão |
 |---|---|
 | **PCRE** (Suricata, ModSecurity, nginx; FortiWeb/FortiGate/Splunk `rex` usam `{16,}` não-possessivo) | `(?<![A-Za-z0-9+/_-])(?:(?:[A-Za-z0-9+/]{4}){16,}+\|(?:[A-Za-z0-9_-]{4}){16,}+)={1,2}(?![A-Za-z0-9+/_=-])` |
-| **RE2 / sem-lookbehind** (AWS WAF, Cloudflare, Elastic `regexp`, FortiAnalyzer) | `(^\|[^A-Za-z0-9+/_-])(?:(?:[A-Za-z0-9+/]{4}){16,}\|(?:[A-Za-z0-9_-]{4}){16,})={1,2}([^A-Za-z0-9+/_=-]\|$)` |
+| **RE2 / sem-lookbehind** (AWS WAF, Cloudflare, FortiAnalyzer) | `(^\|[^A-Za-z0-9+/_-])(?:(?:[A-Za-z0-9+/]{4}){16,}\|(?:[A-Za-z0-9_-]{4}){16,})={1,2}([^A-Za-z0-9+/_=-]\|$)` |
 | **+ `=` percent-encoded (`%3D`)** p/ URI/corpo brutos | `…={1,2}(?![A-Za-z0-9+/_=-])` ou o ramo `(?:={1,2}…\|%3[dD])` |
 
 > **Evasão (regras de rede são pré-normalização):** `%3D`, `\u003d` (JSON) e `&#61;` (XML/SAML) passam no
 > sensor e chegam decodificados ao `Base64.decode`. Normalize antes do match quando possível (ex.: ModSec
 > `t:urlDecodeUni,t:jsDecode`). O MIME decoder **não** é vulnerável, então line-wrap MIME **não** é evasão.
+
+> **Elastic `regexp`/`RLIKE` é Lucene** — ancorado ao termo inteiro (match no campo todo), `^`/`$` são
+> **literais** e não há lookaround. Por isso usa uma forma de **fronteira OPCIONAL** distinta da RE2 acima
+> (que vale para AWS WAF/Cloudflare/FortiAnalyzer, que fazem substring-search): a forma de fronteira "dura"
+> casaria **zero** gatilhos no Lucene. Ver [`siem/splunk-elastic.md`](siem/splunk-elastic.md).
 
 ## Engines disponíveis
 
@@ -46,8 +51,10 @@ amplo (pega 64 e 128). O `{16,}+` é **possessivo** (anti-ReDoS); FortiWeb/Forti
 > **Status de validação (honesto):** a forma foi validada em `testes/validar.py` (16/16, 0 FP no
 > conjunto curado), nos **motores reais** via [`testes/per-engine/`](../testes/per-engine/) (as 43 regexes
 > em google-re2 + pcre2 + yara, mais o **LOAD** das regras enviadas no engine real — YARA/nginx/Suricata),
-> e com **0 FP em 107.752 strings benignas** ([`testes/fp-replay/`](../testes/fp-replay/)). O **bloqueio
-> HTTP ponta-a-ponta ao vivo** foi demonstrado **só no nginx** (demo: bloqueia `=` **e** `==`). Os demais
+> e com **0 FP em 107.752 strings benignas** ([`testes/fp-replay/`](../testes/fp-replay/)). O **bloqueio/alerta
+> HTTP ao vivo** foi demonstrado no **nginx** (demo: bloqueia `=` **e** `==`) e agora também no **Suricata**
+> (replay de PCAP) e no **ModSecurity** (403) via o tier [`testes/on-the-wire/`](../testes/on-the-wire/) — prova
+> de que a regra **dispara no fio**, não só que a regex casa e o arquivo carrega. Os demais
 > engines são **ports da mesma forma canônica** (regex + LOAD testados; bloqueio ao vivo não) — valide cada
 > um no seu ambiente (sintaxe, buffers e ponto de inspeção variam por produto; ex.: YARA/RE2 não têm
 > lookbehind, FortiOS pode rejeitar possessivo).

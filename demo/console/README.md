@@ -37,20 +37,41 @@ JDK **17+** (a UI usa `com.sun.net.httpserver`):
 ```bash
 cd demo/console
 javac AttackConsole.java
-java AttackConsole [alvo] [porta-ui]
+java AttackConsole [alvo] [porta-ui] [--allow-remote]
 ```
 
 - **`alvo`** — default `http://127.0.0.1:8899` (aponte para o seu virtual server do FortiWeb; para o alvo
   Java local de lab use `http://127.0.0.1:18080/`).
 - **`porta-ui`** — default `8090`. Abra **`http://127.0.0.1:8090`** no navegador.
 
-Ou defina o alvo por variável de ambiente (equivale ao 1º argumento):
+Ou defina o alvo por variável de ambiente (equivale ao 1º argumento). Como o exemplo abaixo é um
+host **remoto** (não-loopback), ele precisa do opt-in da "Trava de lab" (logo abaixo):
 
 ```bash
-D4S_TARGET=http://10.10.10.101:8899 java AttackConsole
+D4S_ALLOW_REMOTE=1 D4S_TARGET=http://10.10.10.101:8899 java AttackConsole
 ```
 
 O terminal imprime a URL da UI e o alvo resolvido; `Ctrl-C` encerra.
+
+### Trava de lab — loopback por padrão
+
+Por **higiene de lab** (não é "segurança", é um pé-atrás), o console só dispara contra **loopback**
+por padrão: `127.0.0.1` (e todo o `127.0.0.0/8`), `localhost`, `::1` e `*.localhost`. Um alvo em
+**qualquer outro host** é **recusado antes de subir qualquer coisa** — a menos que você habilite o
+modo remoto **de forma explícita**, com a flag `--allow-remote` **ou** o env `D4S_ALLOW_REMOTE=1`:
+
+```bash
+# loopback — uso normal, nada muda:
+java AttackConsole http://127.0.0.1:18080/
+
+# alvo remoto (ex.: vserver do FortiWeb) — SÓ em rede isolada e autorizado:
+java AttackConsole http://10.10.10.101:8899 --allow-remote
+D4S_ALLOW_REMOTE=1 java AttackConsole http://10.10.10.101:8899
+```
+
+É só para não disparar a rajada contra um host remoto **por engano** (um arg ou env trocado). **Não**
+substitui autorização nem rede isolada — continua valendo o aviso do topo. Sem o opt-in, o console
+sai com uma mensagem clara (e código de saída `2`) explicando como habilitar.
 
 ## Os 3 cenários (botões na UI)
 
@@ -74,7 +95,8 @@ disparam, por que ARM e Skylake são imunes) está em [`../../docs/ANALISE.md`](
 (host AMD **Zen 4** + **OpenJDK 21.0.13**).
 
 **(b) Virtual server do FortiWeb → backend Java — a stack real.** Aponte para o vserver (ex.:
-`http://10.10.10.101:8899`) com a assinatura custom do Detect4Shell carregada no Inline Protection Profile
+`http://10.10.10.101:8899`) — como é um host remoto, lembre do opt-in da "Trava de lab"
+(`--allow-remote` ou `D4S_ALLOW_REMOTE=1`) — com a assinatura custom do Detect4Shell carregada no Inline Protection Profile
 (ver [`../../regras/fortiweb/detect4shell.md`](../../regras/fortiweb/detect4shell.md)). Com a ação em
 **Alert & Deny**, o `403` do FortiWeb é classificado como **`WAF_BLOCKED`**; o Benigno **passaria** (200,
 proxied) quando o backend serve — no demo ao vivo o backend do PILOT estava fora, então esse estado não

@@ -14,4 +14,4 @@ fi
 exec docker run --rm \
   -v "$HERE/fp_replay.py:/v.py:ro" \
   ${SL:+-v "$SL:/seclists/common.txt:ro"} \
-  python:3.12-slim sh -c "pip install -q google-re2 pcre2 2>/dev/null && python /v.py"
+  python:3.12-slim sh -c "pip install -q google-re2==1.1.20251105 pcre2==0.7.1 2>/dev/null && python /v.py"
