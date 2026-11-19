@@ -22,15 +22,25 @@ no boundary da aplicação") para quem ainda não corrigiu o JDK.
 
 ## O Servlet Filter — [`Java4ShellFilter.java`](Java4ShellFilter.java)
 
-Inspeciona cada request e, se um header, parâmetro (query/form) ou cookie casar a forma do gatilho,
-responde **HTTP 400** (ou só loga, em `mode=detectonly`). Usa **o mesmo padrão canônico** das regras
+Inspeciona cada request e, se um header, **segmento de path**, parâmetro (query/form) ou cookie casar a
+forma do gatilho, responde **HTTP 400** (ou só loga, em `mode=detectonly`). Usa **o mesmo padrão canônico**
+das regras
 do repo ([regras/README.md](../regras/README.md)), com quantificador possessivo (anti-ReDoS).
 
 **Escopo (honesto):** cobre os sinks pré-auth documentados — `Authorization` (Basic/Bearer),
-parâmetros de query e de corpo **form** (SAMLRequest/SAMLResponse/RelayState) e cookies. **Não** lê o
-corpo bruto de JSON/XML: o container não parseia esses content-types em params, então o filtro não
-toca o stream deles — para um token Base64 dentro de um corpo JSON, conte com a **flag de JVM**
-(camada 2) ou a **regra de borda**.
+parâmetros de query e de corpo **form** (SAMLRequest/SAMLResponse/RelayState), cookies e **segmentos do
+PATH da URL** (ver abaixo). **Não** lê o corpo bruto de JSON/XML: o container não parseia esses
+content-types em params, então o filtro não toca o stream deles — para um token Base64 dentro de um corpo
+JSON, conte com a **flag de JVM** (camada 2) ou a **regra de borda**.
+
+> **Cobertura de PATH (segmento de caminho).** Apps que **Base64-decodam um segmento do path**
+> (`/download/<b64>`, ids REST codificados) têm um pré-sink que **não** aparece em header/param/cookie. O
+> filtro inspeciona `getRequestURI()`/`getPathInfo()` **quebrando o caminho em segmentos** (split `/`) e
+> rodando a forma em cada um — no cru **e** no URL-decodificado (fecha a evasão `%3D` no path). A
+> segmentação é **necessária**: o gatilho canônico tem lookbehind `(?<![A-Za-z0-9+/_-])` que exclui `/`
+> (o `/` é do alfabeto Base64 padrão), então um run colado no separador de path não casaria a URI inteira
+> — isolado por segmento, ele casa. Roda nos **dois** modos (a URI não é o corpo: não consome o stream,
+> não é afetada por `skipFormBody`).
 
 > **Se a sua app é JSON-API-first, o filtro (camada 3) cobre pouco** — a maior parte do payload entra
 > por um corpo JSON que ele não inspeciona. **Priorize a camada 1 (patch) e a camada 2 (flag de JVM).**
@@ -52,20 +62,27 @@ container **parsear o corpo** — e isso tem dois efeitos colaterais não óbvio
 preceder o **sink de Base64**, não o setter de encoding) ou chame `setCharacterEncoding()` você mesmo; e
 rode em **`mode=detectonly`** tempo suficiente para pegar **regressões de encoding/stream** antes de
 negar. Em último caso, o init-param **`skipFormBody=true`** liga o modo **stream-safe** — não toca no
-corpo (inspeciona só header/cookie/query-string), evitando ambos os footguns. **Lacuna honesta desse
-modo:** params de **corpo** (SAML POST-binding `SAMLResponse`/`RelayState`) deixam de ser vistos — nesse
-modo a cobertura de corpo fica com a camada 1 (patch) / 2 (flag de JVM); header, cookie e **query-string**
-(com a evasão `%3D` fechada via URL-decode) continuam cobertos.
+corpo (inspeciona só header/cookie/query-string/**path**), evitando ambos os footguns. **Lacuna honesta
+desse modo:** params de **corpo** (SAML POST-binding `SAMLResponse`/`RelayState`) deixam de ser vistos —
+nesse modo a cobertura de corpo fica com a camada 1 (patch) / 2 (flag de JVM); header, cookie,
+**query-string** (com a evasão `%3D` fechada via URL-decode) e **segmento de path** continuam cobertos.
 
 **Validação:** o **padrão TRIGGER** é byte-idêntico ao canônico (`regras/README.md`) e o **CI garante
 isso a cada push** via o drift-guard [`testes/canonical_sync.py`](../testes/canonical_sync.py) — logo é
 exercido nos motores reais (pcre2/re2/yara) pela matriz [`testes/per-engine/`](../testes/per-engine/) e
-pela unidade [`testes/validar.py`](../testes/validar.py) (**16/16**, 0 falso-positivo). O filtro
-**compila com `javac` 21** contra a superfície `jakarta.servlet` 6.0 (as assinaturas usadas —
-`getParameterMap`/`getMethod`/`getContentType`/`getQueryString`/`getHeaders`/`getCookies` — são idênticas
-em `javax.servlet` 4.0.1) e passa um **harness funcional de 9 cenários** cobrindo default × `skipFormBody`:
-gatilho no corpo form (bloqueia no default; **lacuna esperada** no stream-safe), na query (inclusive a
-evasão `%3D`), em `Authorization` e em cookie; GET e JSON/benigno passam.
+pela unidade [`testes/validar.py`](../testes/validar.py) (**16/16**, 0 falso-positivo).
+
+O filtro **compila com `javac` 21** e passa um **harness funcional auto-contido de 13 cenários**
+([`test/Java4ShellFilterTest.java`](test/Java4ShellFilterTest.java); rode com `bash mitigacao/test/run.sh`).
+O harness compila a classe **real** contra **stubs inline de `jakarta.servlet`** ([`test/jakarta/`](test/jakarta/)
+— só a superfície que o filtro usa: `getParameterMap`/`getMethod`/`getContentType`/`getQueryString`/
+`getHeaders`/`getCookies`/`getRequestURI`/`getPathInfo`, assinaturas idênticas em `jakarta.servlet` 6.0 e
+`javax.servlet` 4.0.1), **sem Maven e sem baixar a servlet-api**, e exercita o filtro com requisições fake.
+Os 13 cenários cobrem default × `skipFormBody` × `detectonly`: gatilho no corpo form (bloqueia no default;
+**lacuna esperada** no stream-safe), na query (inclusive a evasão `%3D`), em `Authorization`, em cookie e em
+**segmento de PATH** (`/download/<b64>`, inclusive `%3D`); GET benigno, corpo JSON (não parseado em params)
+e o corpo-form no modo stream-safe passam. `exit != 0` em qualquer falha. **Hoje o harness roda fora do
+gate automático** (`test.sh`) — ver [`test/README.md`](test/README.md) para a fiação exata do tier de CI.
 
 ### Como implantar
 

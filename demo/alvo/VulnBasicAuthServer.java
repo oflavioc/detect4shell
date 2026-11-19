@@ -14,9 +14,14 @@
  * Compilar:  javac VulnBasicAuthServer.java
  * Rodar:     java VulnBasicAuthServer [bind] [porta]      (default 127.0.0.1 18080)
  * Mitigar:   java -XX:-UseBASE64Intrinsics VulnBasicAuthServer   (desliga o intrinseco vulneravel)
+ *
+ * Bind: o default e LOOPBACK (127.0.0.1), nao alcancavel pela LAN -- o caminho que todo mundo roda.
+ *       Qualquer bind != loopback (ex. 0.0.0.0) emite um AVISO no stderr: so em rede isolada, NUNCA
+ *       na Internet. 0.0.0.0 so e preciso quando um container (edge nginx) precisa alcancar o alvo.
  */
 import com.sun.net.httpserver.HttpServer;
 import java.io.OutputStream;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -37,7 +42,8 @@ public final class VulnBasicAuthServer {
         int port    = args.length > 1 ? Integer.parseInt(args[1]) : 18080;
         warmJit();
 
-        HttpServer s = HttpServer.create(new InetSocketAddress(bind, port), 0);
+        InetSocketAddress listen = new InetSocketAddress(bind, port);
+        HttpServer s = HttpServer.create(listen, 0);
         s.createContext("/", ex -> {
             int status; String msg;
             String auth = ex.getRequestHeaders().getFirst("Authorization");
@@ -69,6 +75,13 @@ public final class VulnBasicAuthServer {
         s.setExecutor(null); s.start();
         System.out.println("[alvo] vulneravel ouvindo em " + bind + ":" + port
             + "  (intrinseco Base64 AVX-512 aquecido)");
+        // Higiene de lab: o default e loopback (nao alcancavel pela LAN). Qualquer bind != loopback
+        // (0.0.0.0, IP de LAN, ...) deixa este alvo DELIBERADAMENTE vulneravel exposto -> AVISO no stderr.
+        InetAddress boundIp = listen.getAddress();
+        if (boundIp == null || !boundIp.isLoopbackAddress()) {
+            System.err.println("[alvo] AVISO: bind " + bind + " alcancavel na rede -- este alvo e"
+                + " DELIBERADAMENTE vulneravel; use SO em rede isolada, NUNCA na Internet.");
+        }
     }
 
     /** Mede os bytes escritos FORA do fim logico, num buffer-sentinela (logica do reprodutor

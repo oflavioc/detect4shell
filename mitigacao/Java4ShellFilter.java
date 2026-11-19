@@ -24,9 +24,9 @@ import java.util.regex.Pattern;
  * já URL-decodificados, então FECHA a evasão {@code %3D} que passa por regras de borda PRÉ-
  * normalização. ⚠️ NÃO decodifica entidades XML/SAML ({@code &#61;}) nem escapes JSON
  * ({@code \\u003d}) — esses só são resolvidos downstream (Jackson / parser XML), depois do filtro;
- * para eles use a flag de JVM ou o patch. Rejeita (HTTP 400) qualquer header, parâmetro (query/form)
- * ou cookie cujo valor casa a FORMA do gatilho Base64-malformado — ANTES de a aplicação chamar
- * {@code Base64.getDecoder().decode(...)}.
+ * para eles use a flag de JVM ou o patch. Rejeita (HTTP 400) qualquer header, <b>segmento de PATH</b>,
+ * parâmetro (query/form) ou cookie cujo valor casa a FORMA do gatilho Base64-malformado — ANTES de a
+ * aplicação chamar {@code Base64.getDecoder().decode(...)}.
  *
  * <p><b>Não substitui atualizar o JDK</b> (o controle definitivo — ver README §Mitigação).
  * É o controle compensatório de <i>boundary de aplicação</i> que a CISA recomenda para quem
@@ -35,8 +35,10 @@ import java.util.regex.Pattern;
  *
  * <p><b>Escopo (seja honesto ao implantar):</b> cobre os sinks pré-auth documentados —
  * {@code Authorization} (Basic/Bearer), parâmetros de query e de corpo form (SAMLRequest/
- * SAMLResponse/RelayState) e cookies. NÃO lê o corpo bruto de requisições JSON/XML: o container
- * não parseia esses content-types em params, então o {@code getParameterMap()} abaixo não toca o
+ * SAMLResponse/RelayState), cookies e <b>segmentos do PATH da URL</b> ({@code /download/<b64>}, ids REST
+ * codificados — ver {@code pathTrigger}, inspecionado nos dois modos). NÃO lê o corpo bruto de requisições
+ * JSON/XML: o container não parseia esses content-types em params, então o {@code getParameterMap()} abaixo
+ * não toca o
  * stream deles — para um token Base64 dentro de um corpo JSON, conte com a flag de JVM ou a regra
  * de borda. ⚠️ MAS atenção: em POST {@code form-urlencoded}/multipart o {@code getParameterMap()}
  * <b>consome</b> o corpo, com dois efeitos de produção — ver o bloco "Dois footguns" abaixo.
@@ -64,7 +66,7 @@ import java.util.regex.Pattern;
  * preceder o <i>sink</i> de Base64, não o setter de encoding) ou chame {@code setCharacterEncoding()}
  * você mesmo; e rode em {@code mode=detectonly} tempo suficiente para pegar regressões de
  * encoding/stream. Em último caso, o init-param {@code skipFormBody=true} evita ambos (não toca no
- * corpo: inspeciona só header/cookie/query-string) — ao custo de NÃO ver params de corpo (SAML
+ * corpo: inspeciona só header/cookie/query-string/path) — ao custo de NÃO ver params de corpo (SAML
  * POST-binding), que nesse modo ficam a cargo da camada 1 (patch) / 2 (flag de JVM).
  *
  * <p><b>Init-params:</b> {@code mode=detectonly} só loga e deixa passar (use por alguns dias para
@@ -90,8 +92,9 @@ public final class Java4ShellFilter implements Filter {
 
     /**
      * Modo stream-safe (opt-in). Quando {@code true}, requisições POST form-urlencoded/multipart são
-     * inspecionadas SÓ no header/cookie/query-string — o corpo NÃO é lido (não consome o stream, não
-     * trava o charset). Default {@code false} = comportamento completo (inclui params de corpo).
+     * inspecionadas SÓ no header/cookie/query-string/path — o corpo NÃO é lido (não consome o stream, não
+     * trava o charset). Default {@code false} = comportamento completo (inclui params de corpo). O
+     * segmento de PATH é inspecionado nos DOIS modos (ver {@code pathTrigger}).
      */
     private boolean skipFormBody = false;
 
@@ -125,7 +128,7 @@ public final class Java4ShellFilter implements Filter {
         chain.doFilter(req, resp);
     }
 
-    /** Retorna ONDE casou (header/param/cookie) ou {@code null}. Só inspeciona; não decodifica Base64. */
+    /** Retorna ONDE casou (header/path/param/cookie) ou {@code null}. Só inspeciona; não decodifica Base64. */
     private String firstTrigger(HttpServletRequest r) {
         Enumeration<String> names = r.getHeaderNames();
         if (names != null) {
@@ -137,6 +140,12 @@ public final class Java4ShellFilter implements Filter {
                 }
             }
         }
+        // Segmento de PATH (finding #7): apps que Base64-decodam um segmento de caminho (/download/<b64>,
+        // ids REST codificados) têm um pré-sink invisível a header/param/cookie. Roda nos DOIS modos — a
+        // URI/pathInfo não é o corpo, então não consome o stream nem é afetada por skipFormBody. Ver
+        // pathTrigger(): segmenta por '/' porque o '/' pertence ao alfabeto Base64 e quebra o lookbehind.
+        String path = pathTrigger(r.getRequestURI(), r.getPathInfo());
+        if (path != null) return path;
         // getParameterMap = query + (POST form) corpo; cobre SAMLRequest/SAMLResponse/RelayState.
         // Content-type não-form (JSON/XML): o container não parseia params → o corpo bruto NÃO é
         // tocado aqui (não quebra @RequestBody). ⚠️ MAS em POST form-urlencoded/multipart isso CONSOME
@@ -163,6 +172,39 @@ public final class Java4ShellFilter implements Filter {
 
     private static boolean hit(String s) {
         return s != null && s.length() >= MIN_LEN && TRIGGER.matcher(s).find();
+    }
+
+    /**
+     * Inspeciona o PATH da URL (finding #7) — fecha o pré-sink de apps que Base64-decodam um SEGMENTO de
+     * caminho ({@code /download/<b64>}, ids REST codificados), que não aparece em header/param/cookie.
+     * <p>O gatilho canônico tem lookbehind {@code (?<![A-Za-z0-9+/_-])} que EXCLUI {@code '/'} (o {@code '/'}
+     * é do alfabeto padrão Base64), então um run colado no separador de path jamais casaria a URI inteira;
+     * por isso quebramos o caminho em SEGMENTOS (split {@code '/'}) e rodamos a forma em cada um — no cru E
+     * no URL-decodificado (fecha a evasão {@code %3D} num segmento de path). Usa {@code getRequestURI()}
+     * (cru, cobre todo o caminho) e {@code getPathInfo()} (já decodificado pelo container). Retorna
+     * {@code "path"} ou {@code null}.
+     */
+    private static String pathTrigger(String requestUri, String pathInfo) {
+        if (segmentHit(requestUri)) return "path";
+        // getPathInfo() já vem URL-decodificado pelo container; só re-checa se difere da URI crua.
+        if (pathInfo != null && !pathInfo.equals(requestUri) && segmentHit(pathInfo)) return "path";
+        return null;
+    }
+
+    /**
+     * {@code true} se ALGUM segmento (split {@code '/'}) do caminho casa a forma do gatilho — no valor cru
+     * OU no URL-decodificado (fecha {@code %3D}). Segmentar é o que habilita o match: isolado do {@code '/'},
+     * o início do segmento satisfaz o lookbehind do gatilho. Só inspeciona; não decodifica Base64.
+     */
+    private static boolean segmentHit(String path) {
+        if (path == null || path.isEmpty()) return false;
+        for (String seg : path.split("/")) {
+            if (seg.isEmpty()) continue;
+            if (hit(seg)) return true;
+            String dec = safeDecode(seg);
+            if (!dec.equals(seg) && hit(dec)) return true;
+        }
+        return false;
     }
 
     /**

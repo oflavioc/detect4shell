@@ -15,11 +15,15 @@ Fortinet real e de forma visual:
   mitigada / CPU sem VBMI / patch) · ❓ sem resposta. Mostra a diferença entre "passou na borda" e
   "backend de fato explorável" sem ler log: [`console/`](console/).
 
-> ⚠️ **SÓ LABORATÓRIO.** O alvo é um servidor Java **deliberadamente vulnerável**. O passo 1 sobe em
-> `0.0.0.0` (preciso para o container nginx alcançá-lo via `host.docker.internal`), o que o deixa
-> **alcançável pela LAN** — rode só em **rede isolada/confiável** e **nunca** o exponha na Internet.
-> Não é um exploit: o "payload" é a string Base64 malformada já pública (`A×64 + "="`), e toda
-> consequência fica dentro do processo (ele **mede** a violação de memória; não é weaponizado).
+> ⚠️ **SÓ LABORATÓRIO.** O alvo é um servidor Java **deliberadamente vulnerável**. O caminho
+> principal deste demo (**passos 1–3, que todo mundo roda**) sobe o alvo em **loopback**
+> (`127.0.0.1` — o default do servidor), **não** alcançável pela LAN. Só a **FASE 2** (passo 4 — o
+> container nginx precisa alcançar o alvo via `host.docker.internal`) exige um bind de rede
+> (`0.0.0.0`); lá isso é uma **exceção deliberada e marcada**, **só em rede isolada/confiável** e
+> **nunca** exposta na Internet. O próprio alvo imprime um **AVISO no stderr** sempre que bina em
+> algo diferente de loopback. Não é um exploit: o "payload" é a string Base64 malformada já pública
+> (`A×64 + "="`), e toda consequência fica dentro do processo (ele **mede** a violação de memória;
+> não é weaponizado).
 
 > 🧪 **Trava de loopback no `atacar.sh` (higiene de lab).** Por padrão, o `./atacar.sh` só dispara
 > contra **loopback** (`127.0.0.1`/`127.0.0.0/8`, `localhost`, `::1`, `*.localhost`) — os passos
@@ -83,11 +87,13 @@ LOG DO ALVO: só 1 escrita OOB (a da Fase 1). O gatilho da Fase 2 NÃO gerou OOB
 ```bash
 cd demo/alvo
 javac VulnBasicAuthServer.java
-java VulnBasicAuthServer 0.0.0.0 18080      # 0.0.0.0 p/ o container nginx alcançar
+java VulnBasicAuthServer            # default seguro: bina em 127.0.0.1:18080 (loopback)
 ```
-Espere a linha `[alvo] vulneravel ouvindo em 0.0.0.0:18080`. Esse processo **bloqueia o terminal** —
-**abra um segundo terminal** para rodar os ataques (os `./atacar.sh` saem sempre de `demo/`; os
-`java VulnBasicAuthServer` saem de `demo/alvo/`, onde está o `.class`).
+Espere a linha `[alvo] vulneravel ouvindo em 127.0.0.1:18080`. Em **loopback** (o default, sem passar
+`0.0.0.0`) o alvo **não** é alcançável pela LAN — é o caminho que todo mundo roda para a FASE 1 e a
+mitigação (passos 2 e 3). Esse processo **bloqueia o terminal** — **abra um segundo terminal** para
+rodar os ataques (os `./atacar.sh` saem sempre de `demo/`; os `java VulnBasicAuthServer` saem de
+`demo/alvo/`, onde está o `.class`).
 
 ### 2) FASE 1 — ataque SEM defesa (direto no alvo)
 ```bash
@@ -98,10 +104,11 @@ O gatilho retorna **HTTP 500 `oob_write=62 bytes`** e o alvo loga `!!! ESCRITA O
 **→ print:** terminal do ataque + terminal do alvo lado a lado.
 
 ### 3) (Opcional) mitigação por flag de JVM — zero código
-Derrube o alvo (Ctrl-C no terminal do servidor) e suba com o intrínseco vulnerável desligado:
+Derrube o alvo (Ctrl-C no terminal do servidor) e suba com o intrínseco vulnerável desligado (segue no
+default **loopback**):
 ```bash
 # terminal do servidor (em demo/alvo)
-java -XX:-UseBASE64Intrinsics VulnBasicAuthServer 0.0.0.0 18080
+java -XX:-UseBASE64Intrinsics VulnBasicAuthServer
 ```
 ```bash
 # terminal do ataque (em demo)
@@ -111,7 +118,22 @@ Agora o gatilho vira **HTTP 400 `SEM escrita OOB`** — a flag `-XX:-UseBASE64In
 (product/default no HotSpot) força o Base64 puro-Java, imune. **→ print.**
 
 ### 4) FASE 2 — defesa na borda (edge nginx Detect4Shell)
-Com o alvo vulnerável no ar (passo 1), suba o nginx com a regra do repo:
+Esta fase sobe o **nginx Detect4Shell** na frente do alvo. O **container** alcança o alvo via
+`host.docker.internal`, que — no Docker Desktop / rede bridge — resolve para o **gateway do host**,
+**não** para o loopback do host. Por isso, **só nesta fase**, o alvo precisa escutar num endereço de
+rede em vez de loopback.
+
+> 🚨 **EXCEÇÃO deliberada — só a FASE 2, só em rede isolada.** Derrube o alvo (Ctrl-C) e **re-suba em
+> `0.0.0.0`** apenas para o container alcançá-lo. Isso o deixa **alcançável pela LAN** — rode **só** em
+> **rede isolada/confiável** e **nunca** o exponha na Internet. Na subida o alvo imprime, de propósito,
+> um **AVISO no stderr** (`[alvo] AVISO: bind 0.0.0.0 alcancavel na rede ...`) para lembrar que você
+> saiu do default loopback.
+```bash
+# terminal do servidor (em demo/alvo) — SÓ nesta fase, SÓ em rede isolada:
+java VulnBasicAuthServer 0.0.0.0 18080
+```
+
+Com o alvo no ar em `0.0.0.0` (a exceção acima), suba o nginx com a regra do repo:
 ```bash
 docker run -d --name d4s-edge \
   --add-host host.docker.internal:host-gateway \
@@ -120,6 +142,13 @@ docker run -d --name d4s-edge \
   nginx:1.27-alpine
 ```
 > No Git-Bash (Windows) use o caminho absoluto `C:/...` e prefixe `MSYS_NO_PATHCONV=1`.
+
+> 💡 **Alternativa sem `0.0.0.0` (Linux).** Em Linux dá para manter o alvo em **loopback** e dar ao
+> container acesso ao loopback do host com `docker run --network host` — aí o nginx fala com
+> `127.0.0.1:18080` direto. **Trade-off:** `--network host` só vale no **Linux** (no Docker Desktop de
+> macOS/Windows o daemon roda numa VM e **não** compartilha o loopback do host) e exige apontar o
+> `proxy_pass` do [`edge-nginx/nginx.conf`](edge-nginx/nginx.conf) para `127.0.0.1:18080` em vez de
+> `host.docker.internal:18080`. Fora do Linux, use a exceção `0.0.0.0` acima — em rede isolada.
 
 Ataque agora pela borda:
 ```bash

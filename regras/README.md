@@ -14,8 +14,10 @@ OOB é **heap-dependente** (precisa de bytes Base64 válidos logo após o buffer
 no padrão fixo, **raro** em alocação arbitrária; por isso o crash é probabilístico (ver
 [ANALISE](../docs/ANALISE.md)). A regra usa alfabeto **SPLIT** (padrão `+/` OU url-safe `_-`, nunca
 misto — reduz FP em paths REST), aceita **1-2 `=`** (aceitar só um era bypassável por `==`), e `{16,}`
-amplo (pega 64 e 128). O `{16,}+` é **possessivo** (anti-ReDoS); FortiWeb/FortiGate/Splunk `rex` enviam a variante **não-possessiva** `{16,}` (FortiOS pode rejeitar possessivo), detecção idêntica. Variante low-FP: `{64,}` no lugar de
-`{16,}` casa só múltiplos de 64 (os strides reais do vetor AVX-512).
+amplo (pega 64 e 128). O `{16,}+` é **possessivo** (anti-ReDoS); FortiWeb/FortiGate/Splunk `rex` enviam a variante **não-possessiva** `{16,}` (FortiOS pode rejeitar possessivo), detecção idêntica. Como o quantificador atua sobre o grupo `{4}`, ele conta **quads** (chars = `4×N`): `{16,}` = **64+
+chars** (cobre os gatilhos de 64 e 128). Uma **variante low-FP** com piso maior usa `{32,}` (**128+ chars**),
+mas aí **perde** o gatilho de 64; para casar só os dois strides conhecidos, ancore `{16}` (exatos 64 chars)
+e `{32}` (exatos 128). ⚠️ `{64,}` **não** casa "múltiplos de 64": é `4×64` = **256+ chars**, perdendo 64 **e** 128.
 
 | Motor de regex | Padrão |
 |---|---|
@@ -72,7 +74,8 @@ As regras de forma precisa casam o `=` **literal**. Em parâmetros de URL/corpo,
 - **Decodificam a URL automaticamente** (então o `=` literal aparece e a regra pega): Suricata `http.uri`,
   ModSecurity `ARGS`, AWS WAF/Cloudflare **com a transformação `URL_DECODE`**.
 - **Brutos (precisam da variante `%3D`)**: Suricata `http.request_body`, nginx `$args`, FortiWeb URI/corpo,
-  logs crus em SIEM. Para esses, as regras já incluem o ramo `(?:=…|%3[dD])` ou um filtro URL-decode.
+  logs crus em SIEM. Para esses, o ramo `(?:=…|%3[dD])` já está embutido nas regras de corpo do Suricata (sids 2026114952 e
+2026114954); onde ele não estiver presente, normalize antes com um filtro URL-decode.
 - **Dupla codificação (`%253D`)** derrota decodificadores de passo único — e normalmente a própria app
   também; é caso de borda. Prefira **corrigir o JDK**.
 

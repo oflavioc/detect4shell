@@ -14,11 +14,17 @@ tentativas e **prevenir** na borda — com instruções simples, passo a passo.
 > o ataque explicado como para alguém de 10 anos (o que é, como funciona, implicações, e onde achar na
 > sua organização). 5 minutos. **É hype ou é real? Estou vulnerável?** → [**docs/FAQ.md**](docs/FAQ.md).
 
-> **Aviso de escopo.** Projeto **só defensivo**. Sem exploit, sem cadeia weaponizada
-> (writer/reader/JavaBleed/RCE), sem ferramenta que dispare o gatilho de corrupção de memória contra um
-> alvo remoto. O único ponto em que o gatilho roda é uma **reprodução local, confinada e offline**
-> (`java.util.Base64` dentro de um array do próprio programa), só para validar a detecção e verificar
-> patch. Use apenas em sistemas que você está autorizado a testar.
+> **Aviso de escopo.** Projeto **só defensivo**: **sem exploit e sem cadeia weaponizada**
+> (writer/reader/JavaBleed/RCE) — o primitivo de corrupção nunca vira leitura/escrita útil nem execução;
+> onde o gatilho roda, a escrita OOB fica **dentro de um array do próprio programa**, que a ferramenta
+> apenas **mede**. O gatilho de corrupção de memória roda em **dois sítios confinados**: (1) a
+> **reprodução de lab local e offline** (`laboratorio/Base64Trigger.java` — `java.util.Base64` num array
+> do próprio programa), só para validar a detecção e verificar patch; e (2) o **alvo de demo**
+> (`demo/alvo/`, um servidor Java **deliberadamente vulnerável** que mede a escrita OOB no seu próprio
+> processo), exercitado pelo **Console de Ataque** (`demo/console/`) e por `demo/atacar.sh` — que **por
+> padrão só disparam contra loopback**, exigindo opt-in explícito (`--allow-remote` /
+> `D4S_ALLOW_REMOTE=1`) para qualquer outro host, e só em rede isolada e autorizada. **Nunca** exponha o
+> alvo vulnerável na Internet. Use apenas em sistemas que você está autorizado a testar.
 
 Baseado na divulgação pública e creditando **[ikow/java4shell-poc](https://github.com/ikow/java4shell-poc)**
 (MIT) + o writeup da Calif.io. Mecanismo fundamentado no commit de correção OpenJDK `5177a70b385c`

@@ -86,7 +86,18 @@ def main():
                 if drift: print("    DRIFT: regex not found in file")
                 if err: print(f"    compile error: {err}")
                 if fails: print(f"    wrong verdicts: {', '.join(fails)}")
-    return 1 if bad else 0
+
+    # Manifest-completeness assertion (the count line above only COUNTS what was extracted; it cannot
+    # see a shipped rule the extractor dropped). orphan_rules() re-scans regras/ for the canonical
+    # trigger form and fails if any such rule is missing from the manifest == shipped with no test.
+    orphans = engines.orphan_rules()
+    print(f"manifest coverage: {len(orphans)} shipped trigger-shape rule(s) missing from the manifest.")
+    if orphans:
+        print("\nMANIFEST COVERAGE FAIL — shipped detection regex(es) NOT exercised by the manifest:")
+        for rel, lineno, line in orphans:
+            print(f"- {rel}:{lineno}\n    {line}")
+        print("  Fix: extend engines.py so these lines are extracted into MANIFEST (then they get tested).")
+    return 1 if (bad or orphans) else 0
 
 
 if __name__ == "__main__":

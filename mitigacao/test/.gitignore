@@ -1,0 +1,3 @@
+# saida de compilacao do harness (run.sh ja limpa; ignorada caso uma rodada falhe no meio)
+build/
+*.class

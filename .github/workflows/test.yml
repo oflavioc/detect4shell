@@ -8,5 +8,9 @@ jobs:
     runs-on: ubuntu-24.04   # pinned (was ubuntu-latest) so the hosted image toolchain does not silently roll
     steps:
       - uses: actions/checkout@v4.2.2   # pinned (was @v4) for a reproducible gate
+      - uses: actions/setup-java@v4.7.1   # the Servlet Filter compile+harness tier needs javac/java
+        with:
+          distribution: temurin
+          java-version: '21'
       - name: Run gate
         run: bash test.sh
