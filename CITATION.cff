@@ -1,0 +1,39 @@
+cff-version: 1.2.0
+message: "Se você usar o Detect4Shell, por favor cite-o conforme abaixo."
+title: Detect4Shell
+abstract: >-
+  Kit defensivo multi-engine de detecção e prevenção de exposição ao Java4Shell
+  (CVE-2026-114938): 11 engines (Suricata/Snort, Sigma, ModSecurity, nginx, FortiWeb,
+  FortiGate IPS, AWS/Cloudflare WAF, YARA, Splunk/Elastic, FortiSIEM/FortiAnalyzer),
+  mitigação na aplicação (Servlet Filter), lab confinado e suíte de testes em motores reais.
+type: software
+authors:
+  - name: "Detect4Shell contributors"
+repository-code: "https://github.com/oflavioc/detect4shell"
+url: "https://github.com/oflavioc/detect4shell"
+license: MIT
+version: 1.0.0
+date-released: "2026-11-19"
+keywords:
+  - java4shell
+  - cve-2026-114938
+  - detection-engineering
+  - defensive-security
+references:
+  - type: report
+    title: "CVE-2026-114938 (Java4Shell) — divulgação da vulnerabilidade"
+    year: 2026
+    authors:
+      - family-names: Luong
+        given-names: Quang
+      - family-names: Rakholiya
+        given-names: Jenish
+    institution:
+      name: "Calif.io"
+  - type: software
+    title: "java4shell-poc (reprodutor upstream, MIT)"
+    year: 2026
+    url: "https://github.com/ikow/java4shell-poc"
+    authors:
+      - family-names: Deng
+        given-names: Qi

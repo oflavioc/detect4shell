@@ -8,7 +8,7 @@
 Ferramenta **defensiva** para a comunidade: ajuda times a **identificar** se estão expostos, **detectar**
 tentativas e **prevenir** na borda — com instruções simples, passo a passo.
 
-![CVE](https://img.shields.io/badge/CVE-2026--114938-8.1_High-orange) ![Licença](https://img.shields.io/badge/licen%C3%A7a-MIT-blue) ![Escopo](https://img.shields.io/badge/escopo-defensivo-green) ![Engines](https://img.shields.io/badge/engines-11-blue)
+[![CI](https://github.com/oflavioc/detect4shell/actions/workflows/test.yml/badge.svg)](https://github.com/oflavioc/detect4shell/actions/workflows/test.yml) ![CVE](https://img.shields.io/badge/CVE-2026--114938-8.1_High-orange) ![Licença](https://img.shields.io/badge/licen%C3%A7a-MIT-blue) ![Escopo](https://img.shields.io/badge/escopo-defensivo-green) ![Engines](https://img.shields.io/badge/engines-11-blue) ![Versão](https://img.shields.io/github/v/release/oflavioc/detect4shell?label=vers%C3%A3o&color=blue)
 
 > **🐣 Nunca ouviu falar? Comece aqui:** [**docs/EXPLICACAO-SIMPLES.md**](docs/EXPLICACAO-SIMPLES.md) —
 > o ataque explicado como para alguém de 10 anos (o que é, como funciona, implicações, e onde achar na
