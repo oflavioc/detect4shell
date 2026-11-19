@@ -42,6 +42,16 @@ JSON, conte com a **flag de JVM** (camada 2) ou a **regra de borda**.
 > — isolado por segmento, ele casa. Roda nos **dois** modos (a URI não é o corpo: não consome o stream,
 > não é afetada por `skipFormBody`).
 
+> **Assimetria com a borda — a cobertura por segmento de path é SÓ da camada 3 (honesto).** A inspeção
+> **por segmento de path** (split `/` + forma no cru **e** no URL-decodificado) **só existe neste filtro**
+> (camada de app). Na borda, a **regra nginx** ([`../regras/nginx`](../regras/nginx/detect4shell.conf)) e o
+> **sensor do honeypot** casam a forma **apenas** em **header (`$http_authorization`), args (`$args`) e
+> cookie (`$http_cookie`)** — **não** olham o path. As regras de borda que *escaneiam* a URI (Suricata
+> `http.uri`, FortiWeb `REQUEST_URI`) a testam como **uma string só**: um run colado ao separador `/`
+> falha o mesmo lookbehind que exclui `/`, e elas **não segmentam** o caminho como este filtro faz. Logo,
+> para o pré-sink `/download/<b64>` a cobertura por segmento é **app-layer-only**; na borda, conte com a
+> camada 1 (patch) / 2 (flag de JVM).
+
 > **Se a sua app é JSON-API-first, o filtro (camada 3) cobre pouco** — a maior parte do payload entra
 > por um corpo JSON que ele não inspeciona. **Priorize a camada 1 (patch) e a camada 2 (flag de JVM).**
 

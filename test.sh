@@ -11,7 +11,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 
 TIERS=(
   "1/7 validar.py (FN+FP unit, no Docker)|python3 -I testes/validar.py"
-  "2/7 canonical drift-guard: 3 out-of-band regex copies (no Docker)|python3 -I testes/canonical_sync.py"
+  "2/7 canonical drift-guard: 5 out-of-band regex copies (no Docker)|python3 -I testes/canonical_sync.py"
   "3/7 Servlet Filter compile+harness: javac stubs + 13 scenarios (no Docker)|bash mitigacao/test/run.sh"
   "4/7 per-engine regex matrix (Docker)|bash testes/per-engine/run.sh"
   "5/7 in-engine rule LOAD: YARA/nginx/Suricata (Docker)|bash testes/per-engine/load_check.sh"

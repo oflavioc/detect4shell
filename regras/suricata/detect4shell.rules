@@ -24,7 +24,7 @@
 alert http $EXTERNAL_NET any -> $HOME_NET any (msg:"JAVA4SHELL Malformed Base64 trigger shape in HTTP header (CVE-2026-114938)"; flow:to_server,established; http.header; pcre:"/(?<![A-Za-z0-9+\/_-])(?:(?:[A-Za-z0-9+\/]{4}){16,}+|(?:[A-Za-z0-9_-]{4}){16,}+)={1,2}(?![A-Za-z0-9+\/_=-])/"; classtype:web-application-attack; reference:cve,2026-114938; sid:2026114950; rev:1; metadata:cve CVE-2026-114938, severity medium, confidence low;)
 
 # --- trigger shape in the URI / query string (SAMLRequest redirect-binding, params) ---
-alert http $EXTERNAL_NET any -> $HOME_NET any (msg:"JAVA4SHELL Malformed Base64 trigger shape in URI/query (CVE-2026-114938)"; flow:to_server,established; http.uri; pcre:"/(?<![A-Za-z0-9+\/_-])(?:(?:[A-Za-z0-9+\/]{4}){16,}+|(?:[A-Za-z0-9_-]{4}){16,}+)={1,2}(?![A-Za-z0-9+\/_=-])/"; classtype:web-application-attack; reference:cve,2026-114938; sid:2026114951; rev:1; metadata:cve CVE-2026-114938, severity medium, confidence low;)
+alert http $EXTERNAL_NET any -> $HOME_NET any (msg:"JAVA4SHELL Malformed Base64 trigger shape in URI/query (CVE-2026-114938)"; flow:to_server,established; http.uri; pcre:"/(?<![A-Za-z0-9+\/_-])(?:(?:[A-Za-z0-9+\/]{4}){16,}+|(?:[A-Za-z0-9_-]{4}){16,}+)(?:={1,2}(?![A-Za-z0-9+\/_=-])|%3[dD])/"; classtype:web-application-attack; reference:cve,2026-114938; sid:2026114951; rev:1; metadata:cve CVE-2026-114938, severity medium, confidence low;)
 
 # --- trigger shape in the request body (SAMLResponse POST, form/API params) ---
 alert http $EXTERNAL_NET any -> $HOME_NET any (msg:"JAVA4SHELL Malformed Base64 trigger shape in request body (CVE-2026-114938)"; flow:to_server,established; http.request_body; pcre:"/(?<![A-Za-z0-9+\/_-])(?:(?:[A-Za-z0-9+\/]{4}){16,}+|(?:[A-Za-z0-9_-]{4}){16,}+)(?:={1,2}(?![A-Za-z0-9+\/_=-])|%3[dD])/"; classtype:web-application-attack; reference:cve,2026-114938; sid:2026114952; rev:1; metadata:cve CVE-2026-114938, severity medium, confidence low;)
@@ -32,6 +32,13 @@ alert http $EXTERNAL_NET any -> $HOME_NET any (msg:"JAVA4SHELL Malformed Base64 
 # --- trigger shape in a Cookie value ---
 alert http $EXTERNAL_NET any -> $HOME_NET any (msg:"JAVA4SHELL Malformed Base64 trigger shape in Cookie (CVE-2026-114938)"; flow:to_server,established; http.cookie; pcre:"/(?<![A-Za-z0-9+\/_-])(?:(?:[A-Za-z0-9+\/]{4}){16,}+|(?:[A-Za-z0-9_-]{4}){16,}+)={1,2}(?![A-Za-z0-9+\/_=-])/"; classtype:web-application-attack; reference:cve,2026-114938; sid:2026114953; rev:1; metadata:cve CVE-2026-114938, severity medium, confidence low;)
 
+# NOTA (assimetria de binding SAML — por design): a regra SAML de ALTA confiança abaixo (sid 2026114954)
+# é SÓ-CORPO (http.request_body + content:"SAML"), cobrindo o HTTP-POST binding (SAMLResponse/SAMLRequest
+# no corpo). Um HTTP-Redirect binding leva o SAMLRequest na QUERY STRING (GET), que NÃO chega a esta regra
+# — casa apenas na regra genérica de URI (sid 2026114951, confiança menor). NÃO enviamos uma regra
+# SAML-na-URI irmã de propósito (mantém o número de regras estável). Para elevar a confiança num SAML
+# redirect-binding, correlacione o hit de URI (2026114951) com um path de endpoint SAML/SSO, ou espelhe
+# esta regra em http.uri no seu sensor. Ver regras/README.md ("Nota — binding SAML").
 # --- explicit SAML parameter focus (higher confidence: SAML endpoints decode base64 pre-auth) ---
 alert http $EXTERNAL_NET any -> $HOME_NET any (msg:"JAVA4SHELL Malformed Base64 in SAML parameter (CVE-2026-114938)"; flow:to_server,established; http.request_body; content:"SAML"; nocase; pcre:"/SAML(?:Request|Response)=[^&]*?(?<![A-Za-z0-9+\/_-])(?:(?:[A-Za-z0-9+\/]{4}){16,}+|(?:[A-Za-z0-9_-]{4}){16,}+)(?:={1,2}(?![A-Za-z0-9+\/_=-])|%3[dD])/i"; classtype:web-application-attack; reference:cve,2026-114938; sid:2026114954; rev:1; metadata:cve CVE-2026-114938, severity high, confidence medium;)
 

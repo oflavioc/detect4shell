@@ -8,9 +8,13 @@
 # taxonomia Sigma padrão — ajuste para o mapeamento do seu backend (ex.: um pipeline pySigma). Estas
 # regras são mais ilustrativas que drop-in. A regra de "exceções repetidas" casa a substring
 # `IllegalArgumentException`, que pode ser ruidosa — correlacione com `java.util.Base64$Decoder`.
-# ATENÇÃO (backend sem lookbehind): os padrões `|re` abaixo usam lookbehind `(?<!...)`, que compila em
-# PCRE (Splunk/QRadar) mas NÃO em Elastic/Lucene nem KQL (RE2). Para esses, use a variante de fronteira
+# PORTABILIDADE (lookbehind): os valores `|re` abaixo usam agora a FORMA DE FRONTEIRA (consome um
+# byte-fronteira em vez de lookbehind/lookahead), que compila TANTO em PCRE (Splunk/QRadar) QUANTO em RE2
+# (KQL/Sentinel, google-re2) — as duas formas são testadas no testes/per-engine/. A variante de fronteira
 # RE2: `(^|[^A-Za-z0-9+/_-])(?:(?:[A-Za-z0-9+/]{4}){16,}|(?:[A-Za-z0-9_-]{4}){16,})={1,2}([^A-Za-z0-9+/_=-]|$)`.
+# ATENÇÃO — Lucene é caso à parte: no `regexp`/`RLIKE` do Elasticsearch `^`/`$` são LITERAIS e não há
+# lookaround (match ancorado ao termo), então nem esta forma de fronteira vale lá — use a forma de
+# fronteira OPCIONAL de `siem/splunk-elastic.md`.
 ---
 title: Java4Shell - Malformed Base64 trigger shape in HTTP request (network)
 id: 9f2a7c10-1d44-4b8e-9a01-java4shell-net1
@@ -25,10 +29,10 @@ logsource:
     category: proxy
 detection:
     malformed_tail:
-        - cs-uri-query|re: '(?<![A-Za-z0-9+/_-])(?:(?:[A-Za-z0-9+/]{4}){16,}|(?:[A-Za-z0-9_-]{4}){16,})={1,2}(?:[^A-Za-z0-9+/_=-]|$)'
-        - cs-Authorization|re: '(?<![A-Za-z0-9+/_-])(?:(?:[A-Za-z0-9+/]{4}){16,}|(?:[A-Za-z0-9_-]{4}){16,})={1,2}(?:[^A-Za-z0-9+/_=-]|$)'
-        - cs-Cookie|re: '(?<![A-Za-z0-9+/_-])(?:(?:[A-Za-z0-9+/]{4}){16,}|(?:[A-Za-z0-9_-]{4}){16,})={1,2}(?:[^A-Za-z0-9+/_=-]|$)'
-        - cs-body|re: '(?<![A-Za-z0-9+/_-])(?:(?:[A-Za-z0-9+/]{4}){16,}|(?:[A-Za-z0-9_-]{4}){16,})={1,2}(?:[^A-Za-z0-9+/_=-]|$)'
+        - cs-uri-query|re: '(^|[^A-Za-z0-9+/_-])(?:(?:[A-Za-z0-9+/]{4}){16,}|(?:[A-Za-z0-9_-]{4}){16,})={1,2}([^A-Za-z0-9+/_=-]|$)'
+        - cs-Authorization|re: '(^|[^A-Za-z0-9+/_-])(?:(?:[A-Za-z0-9+/]{4}){16,}|(?:[A-Za-z0-9_-]{4}){16,})={1,2}([^A-Za-z0-9+/_=-]|$)'
+        - cs-Cookie|re: '(^|[^A-Za-z0-9+/_-])(?:(?:[A-Za-z0-9+/]{4}){16,}|(?:[A-Za-z0-9_-]{4}){16,})={1,2}([^A-Za-z0-9+/_=-]|$)'
+        - cs-body|re: '(^|[^A-Za-z0-9+/_-])(?:(?:[A-Za-z0-9+/]{4}){16,}|(?:[A-Za-z0-9_-]{4}){16,})={1,2}([^A-Za-z0-9+/_=-]|$)'
     condition: malformed_tail
 level: medium
 tags: [attack.initial_access, attack.t1190, cve.2026.114938]
@@ -44,8 +48,8 @@ detection:
         - cs-uri-query|contains: ['SAMLRequest=', 'SAMLResponse=']
         - cs-body|contains: ['SAMLRequest=', 'SAMLResponse=']
     malformed_tail:
-        - cs-uri-query|re: '(?<![A-Za-z0-9+/_-])(?:(?:[A-Za-z0-9+/]{4}){16,}|(?:[A-Za-z0-9_-]{4}){16,})(?:={1,2}(?![A-Za-z0-9+/_=-])|%3[dD])'
-        - cs-body|re: '(?<![A-Za-z0-9+/_-])(?:(?:[A-Za-z0-9+/]{4}){16,}|(?:[A-Za-z0-9_-]{4}){16,})(?:={1,2}(?![A-Za-z0-9+/_=-])|%3[dD])'
+        - cs-uri-query|re: '(^|[^A-Za-z0-9+/_-])(?:(?:[A-Za-z0-9+/]{4}){16,}|(?:[A-Za-z0-9_-]{4}){16,})(?:={1,2}([^A-Za-z0-9+/_=-]|$)|%3[dD])'
+        - cs-body|re: '(^|[^A-Za-z0-9+/_-])(?:(?:[A-Za-z0-9+/]{4}){16,}|(?:[A-Za-z0-9_-]{4}){16,})(?:={1,2}([^A-Za-z0-9+/_=-]|$)|%3[dD])'
     condition: saml_param and malformed_tail
 level: high
 tags: [attack.initial_access, attack.t1190, cve.2026.114938]

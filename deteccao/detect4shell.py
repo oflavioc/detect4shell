@@ -46,7 +46,14 @@ def is_trigger_shape(token: str) -> bool:
     pega 64 E 128. IMPORTANTE: o disparo da escrita OOB é HEAP-DEPENDENTE (precisa de bytes Base64
     válidos logo após o buffer de decode) — reprodutível no padrão fixo do reprodutor, raro em
     alocação arbitrária; por isso o crash é probabilístico. A regra super-casa comprimentos que
-    podem não disparar (ok p/ detecção)."""
+    podem não disparar (ok p/ detecção).
+
+    Direção OPOSTA (honesto): o piso `len(body) % 4 == 0` é o único filtro desta referência que
+    ESTREITA a forma com RISCO DE FALSO-NEGATIVO — exige corpo alinhado a quad porque, no reprodutor
+    fixo (temurin 21.0.13), um corpo NÃO-alinhado (65 chars) não disparou. Trade-off deliberado de
+    redução-de-FP, mas a evidência é um único padrão de lab, não prova de que todo gatilho real chegue
+    alinhado ao decodificador; um gatilho não-alinhado fora do padrão reproduzido passaria despercebido.
+    (O piso de 64 e o alfabeto-puro também estreitam, mas sem risco de FN pelo mecanismo descrito acima.)"""
     m = re.fullmatch(r'([A-Za-z0-9+/_-]+)={1,2}', token.strip())  # 1-2 '=' (A*64+'==' tambem dispara — lab)
     if not m:
         return False

@@ -39,7 +39,7 @@ e `{32}` (exatos 128). ⚠️ `{64,}` **não** casa "múltiplos de 64": é `4×6
 | Arquivo | Motor | Detecta | Previne | Observações |
 |---|---|---|---|---|
 | [`suricata/detect4shell.rules`](suricata/detect4shell.rules) | Suricata/Snort IDS | ✅ | (drop inline) | header/URI/corpo/cookie/SAML/Bearer + warm-up + crash |
-| [`sigma/detect4shell.yml`](sigma/detect4shell.yml) | Sigma → SIEM | ✅ | — | converta p/ seu backend; campos `cs-*` precisam de mapeamento |
+| [`sigma/detect4shell.yml`](sigma/detect4shell.yml) | Sigma → SIEM | ✅ | — | padrões `re` em forma de fronteira RE2 (portável PCRE+RE2; Lucene à parte); campos `cs-*` precisam de mapeamento |
 | [`modsecurity/detect4shell.conf`](modsecurity/detect4shell.conf) | ModSecurity v3 (WAF) | ✅ | ✅ (`deny`) | DETECTONLY por padrão; vire p/ `deny` após ajustar |
 | [`nginx/detect4shell.conf`](nginx/detect4shell.conf) | nginx (edge) | ✅ | ✅ (403) | `map` + `if return 403` |
 | [`fortiweb/detect4shell.md`](fortiweb/detect4shell.md) | **FortiWeb** (WAF) | ✅ | ✅ (alert_deny) | custom signature; CLI + GUI |
@@ -71,13 +71,27 @@ e `{32}` (exatos 128). ⚠️ `{64,}` **não** casa "múltiplos de 64": é `4×6
 ## Nota de evasão — `=` percent-encoded (`%3D`)
 As regras de forma precisa casam o `=` **literal**. Em parâmetros de URL/corpo, o `=` pode vir
 **percent-encoded** como `%3D`. Isso é tratado assim, por engine:
-- **Decodificam a URL automaticamente** (então o `=` literal aparece e a regra pega): Suricata `http.uri`,
-  ModSecurity `ARGS`, AWS WAF/Cloudflare **com a transformação `URL_DECODE`**.
-- **Brutos (precisam da variante `%3D`)**: Suricata `http.request_body`, nginx `$args`, FortiWeb URI/corpo,
-  logs crus em SIEM. Para esses, o ramo `(?:=…|%3[dD])` já está embutido nas regras de corpo do Suricata (sids 2026114952 e
-2026114954); onde ele não estiver presente, normalize antes com um filtro URL-decode.
+- **Decodificam a URL automaticamente** (então o `=` literal aparece e a regra pega): ModSecurity `ARGS`,
+  AWS WAF/Cloudflare **com a transformação `URL_DECODE`**. Suricata `http.uri` normaliza (decoda) por padrão,
+  mas a normalização depende da config do libhtp — por isso a regra de URI (sid 2026114951) **também** leva o
+  ramo `%3D`, para não DEPENDER de a normalização estar ligada.
+- **Brutos (precisam da variante `%3D`)**: Suricata `http.request_body` (e `http.uri`, como cinto-e-suspensório),
+  nginx `$args`, FortiWeb URI/corpo, logs crus em SIEM. Para esses, o ramo `(?:=…|%3[dD])` já está embutido nas
+  regras de URI, corpo e SAML do Suricata (sids 2026114951, 2026114952, 2026114954); onde ele não estiver
+  presente, normalize antes com um filtro URL-decode.
 - **Dupla codificação (`%253D`)** derrota decodificadores de passo único — e normalmente a própria app
   também; é caso de borda. Prefira **corrigir o JDK**.
+
+## Nota — binding SAML: redirect (query) vs POST (corpo)
+A regra SAML de **alta confiança** do Suricata (sid 2026114954) inspeciona **só o corpo** (`http.request_body`
++ `content:"SAML"`), cobrindo o **HTTP-POST binding** (`SAMLResponse`/`SAMLRequest` no corpo). Um
+**HTTP-Redirect binding** leva o `SAMLRequest` na **query string** (GET), que **não** cai nessa regra de alta
+confiança — casa só na regra **genérica de URI** (sid 2026114951, confiança baixa/média). É **intencional**:
+não enviamos uma regra SAML-na-URI irmã (mantém o conjunto de regras estável; ver a nota de contagem nos
+testes). Para elevar a confiança num SAML redirect-binding, **correlacione** o hit de URI com um path de
+endpoint SAML/SSO, ou espelhe a sid 2026114954 em `http.uri` no seu sensor. No **Sigma** não há essa
+assimetria: a regra `saml_param` já casa `SAMLRequest=`/`SAMLResponse=` em `cs-uri-query` **e** `cs-body`,
+então os dois bindings entram.
 
 ## Ordem de implantação recomendada
 1. Carregue em **observação/alerta** (IDS em alert, WAF em count/log, SIEM em evento).

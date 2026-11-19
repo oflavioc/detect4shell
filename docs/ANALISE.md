@@ -47,7 +47,10 @@ precisam ser `A` — qualquer Base64 do alfabeto serve).
 ## Impacto (o que é demonstrado vs. alegado)
 
 - **Demonstrado publicamente (independente):** crash da JVM (**DoS**) e vazamento **local** de heap
-  ("JavaBleed", ex. Blackpoint 30/30 em teste local).
+  ("JavaBleed", ex. Blackpoint 30/30 em teste local). *"JavaBleed" é só o apelido que os descobridores
+  deram a esse vazamento de heap **local e limitado** — o nível intermediário da taxonomia de impacto
+  deste repo (DoS → **leak local** → RCE), **não** um vazamento remoto estilo Heartbleed. O apelido ecoa
+  o sintoma (ler memória adjacente, dentro do próprio processo/host), não o alcance.*
 - **Alegado e retido (Calif.io), não reproduzido de forma independente:** RCE pré-auth via cadeia de
   grooming de heap → corromper campo de tamanho de array vizinho (primitiva de escrita) → corromper
   um segundo array (primitiva de leitura) → disclosure/execução. Oracle/Amazon tratam o code-exec

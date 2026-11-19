@@ -40,9 +40,19 @@ public final class VulnBasicAuthServer {
     public static void main(String[] args) throws Exception {
         String bind = args.length > 0 ? args[0] : "127.0.0.1";
         int port    = args.length > 1 ? Integer.parseInt(args[1]) : 18080;
-        warmJit();
 
         InetSocketAddress listen = new InetSocketAddress(bind, port);
+        // Higiene de lab: o default e loopback (nao alcancavel pela LAN). Qualquer bind != loopback
+        // (0.0.0.0, IP de LAN, ...) deixa este alvo DELIBERADAMENTE vulneravel exposto -> AVISO no stderr.
+        // Emitido ANTES do warm-up e do s.start(), para que quem roda veja o alerta ANTES de o servidor
+        // comecar a aceitar requests (antes era impresso DEPOIS de "ouvindo em", com o alvo ja servindo).
+        InetAddress boundIp = listen.getAddress();
+        if (boundIp == null || !boundIp.isLoopbackAddress()) {
+            System.err.println("[alvo] AVISO: bind " + bind + " alcancavel na rede -- este alvo e"
+                + " DELIBERADAMENTE vulneravel; use SO em rede isolada, NUNCA na Internet.");
+        }
+        warmJit();
+
         HttpServer s = HttpServer.create(listen, 0);
         s.createContext("/", ex -> {
             int status; String msg;
@@ -75,13 +85,6 @@ public final class VulnBasicAuthServer {
         s.setExecutor(null); s.start();
         System.out.println("[alvo] vulneravel ouvindo em " + bind + ":" + port
             + "  (intrinseco Base64 AVX-512 aquecido)");
-        // Higiene de lab: o default e loopback (nao alcancavel pela LAN). Qualquer bind != loopback
-        // (0.0.0.0, IP de LAN, ...) deixa este alvo DELIBERADAMENTE vulneravel exposto -> AVISO no stderr.
-        InetAddress boundIp = listen.getAddress();
-        if (boundIp == null || !boundIp.isLoopbackAddress()) {
-            System.err.println("[alvo] AVISO: bind " + bind + " alcancavel na rede -- este alvo e"
-                + " DELIBERADAMENTE vulneravel; use SO em rede isolada, NUNCA na Internet.");
-        }
     }
 
     /** Mede os bytes escritos FORA do fim logico, num buffer-sentinela (logica do reprodutor
