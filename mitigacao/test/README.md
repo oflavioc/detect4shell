@@ -51,23 +51,9 @@ Os cenários 5/6/12 cobrem a **inspeção de PATH** (segmento de caminho Base64)
 lookbehind `(?<![A-Za-z0-9+/_-])`; por isso o filtro **quebra o path em segmentos** e roda a forma em cada
 um, no cru e no URL-decodificado.
 
-## Fiação no gate de CI (a fazer — fora do escopo deste harness, não editei `test.sh`/`.github`)
+## No gate de CI
 
-O harness **não** está no gate bloqueante hoje. Para adicioná-lo como um tier só-JDK (sem Docker), insira
-em [`../../test.sh`](../../test.sh), no array `TIERS`, **logo após** o tier `2/6 canonical drift-guard`
-(e renumere os seguintes), a linha:
-
-```bash
-  "3/7 filtro: compile+harness javac (no Docker)|bash mitigacao/test/run.sh"
-```
-
-Nenhuma mudança é necessária em [`.github/workflows/test.yml`](../../.github/workflows/test.yml): ele já
-roda `bash test.sh` e o runner `ubuntu-24.04` traz um JDK (`default-jdk`); se quiser fixar a versão,
-adicione antes do passo "Run gate":
-
-```yaml
-      - uses: actions/setup-java@v4.7.1
-        with:
-          distribution: temurin
-          java-version: '21'
-```
+Este harness **está** no gate de regressão como o **tier 3/7** do [`../../test.sh`](../../test.sh)
+(`bash mitigacao/test/run.sh`, só JDK, sem Docker): bloqueia o CI em qualquer cenário que falhe ou erro de
+compilação. O workflow fixa o JDK 21 via `actions/setup-java@v4.7.1` (temurin) em
+[`.github/workflows/test.yml`](../../.github/workflows/test.yml).

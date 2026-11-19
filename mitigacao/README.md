@@ -81,8 +81,8 @@ O harness compila a classe **real** contra **stubs inline de `jakarta.servlet`**
 Os 13 cenários cobrem default × `skipFormBody` × `detectonly`: gatilho no corpo form (bloqueia no default;
 **lacuna esperada** no stream-safe), na query (inclusive a evasão `%3D`), em `Authorization`, em cookie e em
 **segmento de PATH** (`/download/<b64>`, inclusive `%3D`); GET benigno, corpo JSON (não parseado em params)
-e o corpo-form no modo stream-safe passam. `exit != 0` em qualquer falha. **Hoje o harness roda fora do
-gate automático** (`test.sh`) — ver [`test/README.md`](test/README.md) para a fiação exata do tier de CI.
+e o corpo-form no modo stream-safe passam. `exit != 0` em qualquer falha. O harness **está** no gate automático (`test.sh`) como o **tier 3/7** (só JDK, sem Docker) — ver
+[`test/README.md`](test/README.md).
 
 ### Como implantar
 

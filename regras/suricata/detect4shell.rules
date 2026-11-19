@@ -2,7 +2,7 @@
 # Só detecção defensiva. Alerta na FORMA DO GATILHO Base64-malformado em todos os sinks
 # pré-auth realistas, nos dois alfabetos Base64 — não só Basic auth, nem por string
 # exata-de-"A". Validado em testes/validar.py (16/16 num conjunto curado de 16 vetores, 0 FP;
-# baseline exata-A/Basic-only 10/16, 1 FP).
+# baseline exata-A/Basic-only 11/16, 0 FP).
 #
 # PCRE da forma do gatilho:  (?:(?:[A-Za-z0-9+/]{4}){16,}+|(?:[A-Za-z0-9_-]{4}){16,}+)={1,2}(?![A-Za-z0-9+/_=-])
 #   >=16 "quads" Base64 (64 chars, alfabeto PURO padrão +/ OU url-safe _-) + 1 OU 2 '=' numa

@@ -8,7 +8,7 @@
 Ferramenta **defensiva** para a comunidade: ajuda times a **identificar** se estão expostos, **detectar**
 tentativas e **prevenir** na borda — com instruções simples, passo a passo.
 
-![CVE](https://img.shields.io/badge/CVE-2026--114938-critical) ![Licença](https://img.shields.io/badge/licen%C3%A7a-MIT-blue) ![Escopo](https://img.shields.io/badge/escopo-defensivo-green) ![Engines](https://img.shields.io/badge/engines-11-blue)
+![CVE](https://img.shields.io/badge/CVE-2026--114938-8.1_High-orange) ![Licença](https://img.shields.io/badge/licen%C3%A7a-MIT-blue) ![Escopo](https://img.shields.io/badge/escopo-defensivo-green) ![Engines](https://img.shields.io/badge/engines-11-blue)
 
 > **🐣 Nunca ouviu falar? Comece aqui:** [**docs/EXPLICACAO-SIMPLES.md**](docs/EXPLICACAO-SIMPLES.md) —
 > o ataque explicado como para alguém de 10 anos (o que é, como funciona, implicações, e onde achar na
@@ -114,12 +114,13 @@ forma **contígua no buffer** que o sensor inspeciona — veja a nota de evasão
 |---|---|---|
 | **Detect4Shell** (referência py) | **16/16** | **0** |
 | **Detect4Shell** (PCRE das regras) | **16/16** | **0** |
-| abordagem exata-A/Basic-only | 10/16 | 1 |
+| abordagem exata-A/Basic-only | 11/16 | 0 |
 
 **5 FORMAS de gatilho representativas que a abordagem antiga perde e o Detect4Shell pega:** SAML no corpo,
-SAML na query, alfabeto url-safe, valor de cookie, parâmetro de query genérico. (E a abordagem exata-A
-ainda gera 1 falso-positivo que o Detect4Shell não gera.) São **casamentos de forma** representativos de
-uso real — não crashes executados em cada JDK.
+SAML na query, alfabeto url-safe, valor de cookie, parâmetro de query genérico — os 5 que faltam para a
+baseline chegar de 11/16 a 16/16. São **casamentos de forma** representativos de uso real — não crashes
+executados em cada JDK. (Ambos, a baseline e o Detect4Shell, dão **0 falso-positivo** neste conjunto curado;
+a diferença é só de **cobertura de sink/alfabeto**.)
 
 > **Honestidade (pedida pelos revisores cross-vendor):** o "16/16" é **9 TP / 7 TN num conjunto curado de
 > 16 vetores** — um **teste unitário**. Medimos também **0 FP em 107.752 strings benignas reais**
@@ -216,14 +217,15 @@ forma ao JVM (divulgado abertamente — pedido pelos revisores):
 
 ## Testes & CI
 
-`bash test.sh` roda o gate de regressão completo localmente (requer Docker + python3). O CI roda o mesmo em todo push/PR e **bloqueia** em caso de falha. **6 tiers**, em ordem (para no primeiro que falhar):
+`bash test.sh` roda o gate de regressão completo localmente (requer Docker + python3). O CI roda o mesmo em todo push/PR e **bloqueia** em caso de falha. **7 tiers**, em ordem (para no primeiro que falhar):
 
 1. `testes/validar.py` — teste unitário canônico de FN + FP (Python puro, sem Docker).
 2. `testes/canonical_sync.py` — drift-guard: a regex canônica byte-idêntica entre a referência e as cópias fora-de-banda (Python puro, sem Docker).
-3. `testes/per-engine/run.sh` — matriz por engine: as 43 regexes nos motores reais (re2/pcre2/yara; a regra Elastic é casada com `fullmatch`, fiel à semântica term-anchored do Lucene).
-4. `testes/per-engine/load_check.sh` — as regras enviadas **carregam** no engine real (YARA/nginx/Suricata).
-5. `testes/fp-replay/run.sh` — replay de ~108k strings benignas, 0 falsos positivos.
-6. `testes/on-the-wire/run.sh` — **replay ao vivo**: PCAP no Suricata + requisição HTTP no ModSecurity provam que a regra **dispara no fio** (não só que a regex casa e o arquivo carrega).
+3. `mitigacao/test/run.sh` — compila o **Servlet Filter** contra stubs `jakarta.servlet` inline e roda **13 cenários** (só JDK, sem Docker).
+4. `testes/per-engine/run.sh` — matriz por engine: as 43 regexes nos motores reais (re2/pcre2/yara; a regra Elastic é casada com `fullmatch`, fiel à semântica term-anchored do Lucene).
+5. `testes/per-engine/load_check.sh` — as regras enviadas **carregam** no engine real (YARA/nginx/Suricata).
+6. `testes/fp-replay/run.sh` — replay de ~108k strings benignas, 0 falsos positivos.
+7. `testes/on-the-wire/run.sh` — **replay ao vivo**: PCAP no Suricata + requisição HTTP no ModSecurity provam que a regra **dispara no fio** (não só que a regex casa e o arquivo carrega).
 
 `laboratorio/matrix/run_matrix.sh` (imagens JDK externas que mudam com o tempo) é validação periódica, fora do gate bloqueante (`RUN_MATRIX=1 bash test.sh` roda só como aviso).
 
