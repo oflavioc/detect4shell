@@ -143,7 +143,7 @@ Todas as regras partem da mesma forma validada. Índice e padrões canônicos: [
 | nginx (borda) | ✅ | ✅ | [`regras/nginx/`](regras/nginx/detect4shell.conf) |
 | **FortiWeb** (WAF) | ✅ | ✅ | [`regras/fortiweb/`](regras/fortiweb/detect4shell.md) · [walkthrough](demo/fortiweb/) |
 | **FortiGate IPS** | ✅ | ✅ | [`regras/fortigate-ips/`](regras/fortigate-ips/detect4shell.md) · [walkthrough](demo/fortigate/) |
-| AWS WAFv2 | ✅ | ✅ | [`regras/cloud-waf/`](regras/cloud-waf/aws-waf.json) |
+| AWS WAFv2 | ✅ | ✅ | [`regras/cloud-waf/`](regras/cloud-waf/aws-waf.json) · [walkthrough](demo/aws-waf/) |
 | Cloudflare WAF | ✅ | ✅ | [`regras/cloud-waf/`](regras/cloud-waf/cloudflare.md) |
 | YARA (arquivos/forense) | ✅ | — | [`regras/yara/`](regras/yara/detect4shell.yar) |
 | Splunk / Elastic | ✅ | — | [`regras/siem/`](regras/siem/splunk-elastic.md) |
