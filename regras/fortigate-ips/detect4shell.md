@@ -4,6 +4,10 @@ Custom IPS signature para **detectar e bloquear inline** o gatilho Base64-malfor
 HTTP que atravessa o FortiGate — não só o que está atrás de um WAF. Ideal para proteger apps Java
 expostas no perímetro.
 
+> 📸 **Visto ao vivo:** [`../../demo/fortigate/README.md`](../../demo/fortigate/README.md) — estas custom
+> signatures criadas e **detectando** o gatilho num FortiGate-60E 7.4.12 real (Monitor mode), passo a
+> passo pela GUI, com os prints do lab.
+
 > ⚠️ **Antes:** cheque o **FortiGuard** — a Fortinet provavelmente publica uma assinatura IPS oficial
 > para CVE-2026-114938; esta custom signature é **complemento/stopgap** e cobre vetores que assinaturas
 > genéricas podem perder (SAML/JWT/cookie/url-safe).

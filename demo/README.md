@@ -4,12 +4,15 @@ Mostra, passo a passo, o **ataque acontecendo** (a escrita fora-dos-limites de 6
 Java4Shell) e depois a **defesa na borda** barrando o mesmo request **antes** de chegar no Java —
 usando a regra nginx **do próprio repo** ([`../regras/nginx/detect4shell.conf`](../regras/nginx/detect4shell.conf)).
 
-**Três caminhos para a mesma história (ataque → defesa).** Este README percorre o **demo nginx** — o
-caminho atual, 100% por terminal, logo abaixo. Há mais dois, que mostram o mesmo gatilho com a stack
+**Quatro caminhos para a mesma história (ataque → defesa).** Este README percorre o **demo nginx** — o
+caminho atual, 100% por terminal, logo abaixo. Há mais três, que mostram o mesmo gatilho com a stack
 Fortinet real e de forma visual:
 - **FortiWeb ao vivo** — assinatura custom num FortiWeb-VM barrando o gatilho na borda, passo a passo
   pela GUI do appliance (criar a assinatura, isolar o policy de teste sem tocar no público, provar o
   `403`): [`fortiweb/README.md`](fortiweb/README.md).
+- **FortiGate IPS ao vivo** — custom signature num FortiGate-60E 7.4.12 **detectando** o gatilho
+  inline na camada de rede (IPS), passo a passo pela GUI (criar as 3 sigs, sensor em Monitor, policy
+  de teste isolada, provar a detecção): [`fortigate/README.md`](fortigate/README.md).
 - **Console de Ataque (visual)** — app web Java que dispara o gatilho e **classifica o resultado em 4
   estados**: ✅ chegou e disparou o OOB · 🛡️ barrado pelo WAF · ⚠️ chegou mas **não** disparou (JVM
   mitigada / CPU sem VBMI / patch) · ❓ sem resposta. Mostra a diferença entre "passou na borda" e
